@@ -1,0 +1,121 @@
+{
+  "realm": "voltweave",
+  "displayName": "VoltWeave",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "passwordPolicy": "length(12)",
+  "roles": {
+    "realm": [
+      {
+        "name": "CUSTOMER",
+        "description": "Manage owned sites, devices, participation and rewards"
+      },
+      {
+        "name": "VPP_OPERATOR",
+        "description": "Operate virtual power plants and dispatch workflows"
+      },
+      {
+        "name": "ADMIN",
+        "description": "Manage VoltWeave platform configuration and audit"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "voltweave-web",
+      "name": "VoltWeave Web",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*"
+      }
+    },
+    {
+      "clientId": "voltweave-internal",
+      "name": "VoltWeave Internal Services",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "secret": "${KEYCLOAK_INTERNAL_CLIENT_SECRET}"
+    }
+  ],
+  "users": [
+    {
+      "username": "customer",
+      "email": "customer@voltweave.local",
+      "firstName": "Demo",
+      "lastName": "Customer",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": [
+        "CUSTOMER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${DEMO_CUSTOMER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "operator",
+      "email": "operator@voltweave.local",
+      "firstName": "Demo",
+      "lastName": "Operator",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": [
+        "VPP_OPERATOR"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${DEMO_OPERATOR_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "admin",
+      "email": "admin@voltweave.local",
+      "firstName": "Demo",
+      "lastName": "Administrator",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": [
+        "ADMIN"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${DEMO_ADMIN_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}
