@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.organization.domain.entity;
+package io.voltweave.portfolio.organization.domain.entities;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;

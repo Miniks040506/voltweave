@@ -3,7 +3,7 @@ package io.voltweave.portfolio.organization.api.response;
 import java.time.Instant;
 import java.util.UUID;
 
-import io.voltweave.portfolio.organization.domain.entity.Organization;
+import io.voltweave.portfolio.organization.domain.entities.Organization;
 import io.voltweave.portfolio.organization.domain.enums.OrganizationStatus;
 import io.voltweave.portfolio.organization.domain.enums.OrganizationType;
 

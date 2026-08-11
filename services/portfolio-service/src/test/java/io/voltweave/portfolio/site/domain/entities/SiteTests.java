@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.site.domain.entity;
+package io.voltweave.portfolio.site.domain.entities;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

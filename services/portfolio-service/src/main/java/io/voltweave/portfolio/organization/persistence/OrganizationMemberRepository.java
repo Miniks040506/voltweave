@@ -9,7 +9,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import io.voltweave.portfolio.organization.domain.entity.OrganizationMember;
+import io.voltweave.portfolio.organization.domain.entities.OrganizationMember;
 import io.voltweave.portfolio.organization.domain.enums.MembershipStatus;
 import io.voltweave.portfolio.organization.domain.enums.OrganizationRole;
 

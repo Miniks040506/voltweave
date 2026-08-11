@@ -14,8 +14,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.voltweave.portfolio.PostgresTestConfiguration;
-import io.voltweave.portfolio.organization.domain.entity.Organization;
-import io.voltweave.portfolio.organization.domain.entity.OrganizationMember;
+import io.voltweave.portfolio.organization.domain.entities.Organization;
+import io.voltweave.portfolio.organization.domain.entities.OrganizationMember;
 import io.voltweave.portfolio.organization.domain.enums.OrganizationRole;
 import io.voltweave.portfolio.organization.domain.enums.OrganizationType;
 import io.voltweave.portfolio.organization.persistence.OrganizationMemberRepository;

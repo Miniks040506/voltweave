@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.organization.domain.entity;
+package io.voltweave.portfolio.organization.domain.entities;
 
 import java.time.Instant;
 import java.util.Objects;

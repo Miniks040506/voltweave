@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import io.voltweave.portfolio.organization.application.OrganizationService;
 import io.voltweave.portfolio.site.application.exception.SiteNotFoundException;
-import io.voltweave.portfolio.site.domain.entity.Site;
-import io.voltweave.portfolio.site.domain.entity.SitePreference;
+import io.voltweave.portfolio.site.domain.entities.Site;
+import io.voltweave.portfolio.site.domain.entities.SitePreference;
 import io.voltweave.portfolio.site.persistence.SitePreferenceRepository;
 import io.voltweave.portfolio.site.persistence.SiteRepository;
 

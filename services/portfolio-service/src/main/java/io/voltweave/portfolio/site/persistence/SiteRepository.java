@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import io.voltweave.portfolio.site.domain.entity.Site;
+import io.voltweave.portfolio.site.domain.entities.Site;
 import io.voltweave.portfolio.site.domain.enums.SiteStatus;
 
 @Repository

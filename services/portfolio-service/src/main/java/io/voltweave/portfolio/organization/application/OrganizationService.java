@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.voltweave.portfolio.organization.application.exception.OrganizationNotFoundException;
-import io.voltweave.portfolio.organization.domain.entity.Organization;
-import io.voltweave.portfolio.organization.domain.entity.OrganizationMember;
+import io.voltweave.portfolio.organization.domain.entities.Organization;
+import io.voltweave.portfolio.organization.domain.entities.OrganizationMember;
 import io.voltweave.portfolio.organization.domain.enums.OrganizationRole;
 import io.voltweave.portfolio.organization.persistence.OrganizationMemberRepository;
 import io.voltweave.portfolio.organization.persistence.OrganizationRepository;
