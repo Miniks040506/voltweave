@@ -1,6 +1,12 @@
 spring:
   application:
     name: portfolio-service
+  datasource:
+    url: ${PORTFOLIO_DB_URL:jdbc:postgresql://localhost:6543/portfolio_db}
+    username: ${PORTFOLIO_DB_USERNAME:portfolio_app}
+    password: ${PORTFOLIO_DB_PASSWORD:local-portfolio-change-me}
+  flyway:
+    validate-migration-naming: true
 
 server:
   port: ${PORT:8081}
