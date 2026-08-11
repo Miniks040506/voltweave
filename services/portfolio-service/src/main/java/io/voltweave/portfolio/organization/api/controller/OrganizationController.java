@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.organization.api;
+package io.voltweave.portfolio.organization.api.controller;
 
 import java.net.URI;
 import java.util.UUID;
@@ -14,8 +14,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.voltweave.portfolio.organization.service.CreateOrganizationCommand;
-import io.voltweave.portfolio.organization.service.OrganizationService;
+import io.voltweave.portfolio.organization.api.request.AddOrganizationMemberRequest;
+import io.voltweave.portfolio.organization.api.request.CreateOrganizationRequest;
+import io.voltweave.portfolio.organization.api.response.OrganizationResponse;
+import io.voltweave.portfolio.organization.application.CreateOrganizationCommand;
+import io.voltweave.portfolio.organization.application.OrganizationService;
 import jakarta.validation.Valid;
 
 @RestController

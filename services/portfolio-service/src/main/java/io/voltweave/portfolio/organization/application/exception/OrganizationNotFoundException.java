@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.organization.service;
+package io.voltweave.portfolio.organization.application.exception;
 
 import java.util.UUID;
 

@@ -1,6 +1,6 @@
-package io.voltweave.portfolio.organization.api;
+package io.voltweave.portfolio.organization.api.request;
 
-import io.voltweave.portfolio.organization.domain.OrganizationType;
+import io.voltweave.portfolio.organization.domain.enums.OrganizationType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;

@@ -1,8 +1,11 @@
-package io.voltweave.portfolio.organization.domain;
+package io.voltweave.portfolio.organization.domain.entity;
 
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+
+import io.voltweave.portfolio.organization.domain.enums.MembershipStatus;
+import io.voltweave.portfolio.organization.domain.enums.OrganizationRole;
 
 public record OrganizationMember(
         UUID id,

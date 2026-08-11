@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.organization.domain;
+package io.voltweave.portfolio.organization.domain.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -6,6 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
+
+import io.voltweave.portfolio.organization.domain.enums.OrganizationStatus;
+import io.voltweave.portfolio.organization.domain.enums.OrganizationType;
 
 class OrganizationTests {
     private static final Instant NOW = Instant.parse("2026-08-11T12:00:00Z");

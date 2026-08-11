@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.organization.api;
+package io.voltweave.portfolio.organization.api.error;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import io.voltweave.portfolio.http.CorrelationIdFilter;
-import io.voltweave.portfolio.organization.service.OrganizationNotFoundException;
+import io.voltweave.portfolio.organization.application.exception.OrganizationNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice

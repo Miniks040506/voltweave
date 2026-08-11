@@ -1,6 +1,6 @@
-package io.voltweave.portfolio.organization.service;
+package io.voltweave.portfolio.organization.application;
 
-import io.voltweave.portfolio.organization.domain.OrganizationType;
+import io.voltweave.portfolio.organization.domain.enums.OrganizationType;
 
 public record CreateOrganizationCommand(
         OrganizationType type,

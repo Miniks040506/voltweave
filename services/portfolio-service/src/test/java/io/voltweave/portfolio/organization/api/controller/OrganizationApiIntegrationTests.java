@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.organization.api;
+package io.voltweave.portfolio.organization.api.controller;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

@@ -1,11 +1,11 @@
-package io.voltweave.portfolio.organization.api;
+package io.voltweave.portfolio.organization.api.response;
 
 import java.time.Instant;
 import java.util.UUID;
 
-import io.voltweave.portfolio.organization.domain.Organization;
-import io.voltweave.portfolio.organization.domain.OrganizationStatus;
-import io.voltweave.portfolio.organization.domain.OrganizationType;
+import io.voltweave.portfolio.organization.domain.entity.Organization;
+import io.voltweave.portfolio.organization.domain.enums.OrganizationStatus;
+import io.voltweave.portfolio.organization.domain.enums.OrganizationType;
 
 public record OrganizationResponse(
         UUID id,
@@ -19,7 +19,7 @@ public record OrganizationResponse(
         Instant createdAt,
         Instant updatedAt
 ) {
-    static OrganizationResponse from(Organization organization) {
+    public static OrganizationResponse from(Organization organization) {
         return new OrganizationResponse(
                 organization.id(),
                 organization.type(),
