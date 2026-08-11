@@ -3,6 +3,8 @@ package io.voltweave.portfolio;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @TestConfiguration(proxyBeanMethods = false)
@@ -12,5 +14,12 @@ public class PostgresTestConfiguration {
     @ServiceConnection
     PostgreSQLContainer postgres() {
         return new PostgreSQLContainer("postgres:18.0-alpine");
+    }
+
+    @Bean
+    JwtDecoder jwtDecoder() {
+        return token -> {
+            throw new JwtException("JWT decoding is not used by persistence tests");
+        };
     }
 }

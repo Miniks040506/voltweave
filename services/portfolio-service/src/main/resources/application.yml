@@ -7,6 +7,11 @@ spring:
     password: ${PORTFOLIO_DB_PASSWORD:local-portfolio-change-me}
   flyway:
     validate-migration-naming: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/voltweave}
 
 server:
   port: ${PORT:8081}
