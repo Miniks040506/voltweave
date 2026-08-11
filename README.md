@@ -9,7 +9,7 @@ The repository currently contains the first runnable vertical foundations:
 - `services/portfolio-service`: Spring Boot service for future tenant, site,
   device and virtual power plant ownership.
 - `apps/web`: Next.js web application.
-- `VOLTWEAVE_V1_PLAN.md`: V1 architecture and delivery plan.
+- `docs/VOLTWEAVE_V1_PLAN.md`: V1 architecture and delivery plan.
 
 Only `portfolio-service` exists today. Other services will be introduced when
 their first real behavior is implemented, rather than as empty scaffolding.
@@ -66,6 +66,6 @@ request and every push to `main`.
 
 ## Specifications
 
-- [V1 delivery plan](VOLTWEAVE_V1_PLAN.md)
-- [Original SRS](GridMind_SRS.md)
-- [Full target-system SRS](GridMind_FULL_Production_SRS.md)
+- [V1 delivery plan](docs/VOLTWEAVE_V1_PLAN.md)
+- [Original SRS](docs/GridMind_SRS.md)
+- [Full target-system SRS](docs/GridMind_FULL_Production_SRS.md)
