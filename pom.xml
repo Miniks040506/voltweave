@@ -21,9 +21,23 @@
 
     <properties>
         <java.version>21</java.version>
+        <spring-cloud.version>2025.1.2</spring-cloud.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <modules>
+        <module>services/api-gateway</module>
         <module>services/intelligence-service</module>
         <module>services/portfolio-service</module>
         <module>services/settlement-service</module>
