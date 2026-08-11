@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: portfolio-service
+
+server:
+  port: ${PORT:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Owns tenants, sites, devices and virtual power plants
