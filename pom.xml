@@ -26,5 +26,6 @@
     <modules>
         <module>services/intelligence-service</module>
         <module>services/portfolio-service</module>
+        <module>services/settlement-service</module>
     </modules>
 </project>
