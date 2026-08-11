@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.organization;
+package io.voltweave.portfolio.organization.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -14,11 +14,17 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.voltweave.portfolio.PostgresTestConfiguration;
+import io.voltweave.portfolio.organization.domain.Organization;
+import io.voltweave.portfolio.organization.domain.OrganizationMember;
+import io.voltweave.portfolio.organization.domain.OrganizationRole;
+import io.voltweave.portfolio.organization.domain.OrganizationType;
+import io.voltweave.portfolio.organization.repository.OrganizationMemberRepository;
+import io.voltweave.portfolio.organization.repository.OrganizationRepository;
 
 @SpringBootTest
 @Import(PostgresTestConfiguration.class)
 @Transactional
-class OrganizationPersistenceTests {
+class OrganizationServiceIntegrationTests {
     @Autowired
     private OrganizationService organizationService;
 

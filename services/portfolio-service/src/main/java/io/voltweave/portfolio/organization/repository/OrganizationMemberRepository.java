@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.organization;
+package io.voltweave.portfolio.organization.repository;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -8,6 +8,10 @@ import java.util.UUID;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+
+import io.voltweave.portfolio.organization.domain.MembershipStatus;
+import io.voltweave.portfolio.organization.domain.OrganizationMember;
+import io.voltweave.portfolio.organization.domain.OrganizationRole;
 
 @Repository
 public class OrganizationMemberRepository {

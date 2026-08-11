@@ -1,9 +1,15 @@
-package io.voltweave.portfolio.organization;
+package io.voltweave.portfolio.organization.service;
 
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import io.voltweave.portfolio.organization.domain.Organization;
+import io.voltweave.portfolio.organization.domain.OrganizationMember;
+import io.voltweave.portfolio.organization.domain.OrganizationRole;
+import io.voltweave.portfolio.organization.repository.OrganizationMemberRepository;
+import io.voltweave.portfolio.organization.repository.OrganizationRepository;
 
 @Service
 public class OrganizationService {
