@@ -678,7 +678,7 @@ Versions are pinned in the repository and updated deliberately, not automaticall
 | Backend | Spring Boot 4.1.x, Spring MVC, Spring Security, Spring Data JPA, Spring Kafka, Actuator |
 | Gateway | Spring Cloud Gateway Server Web MVC |
 | Build | Maven Wrapper, multi-module monorepo |
-| Database | PostgreSQL 18 + TimescaleDB 2.27.x |
+| Database | PostgreSQL 18 + TimescaleDB 2.29.x |
 | Migrations | Flyway |
 | Event streaming | Apache Kafka 4.3.x in KRaft mode |
 | IoT | Eclipse Mosquitto 2.x / MQTT 5 |

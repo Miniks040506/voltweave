@@ -1,0 +1,33 @@
+name: voltweave
+
+services:
+  postgres:
+    image: timescale/timescaledb:2.29.0-pg18
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: ${POSTGRES_ADMIN_USER:?POSTGRES_ADMIN_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?POSTGRES_ADMIN_PASSWORD is required}
+      TIMESCALEDB_TELEMETRY: "off"
+      TS_TUNE_MEMORY: 1GB
+      TS_TUNE_NUM_CPUS: "2"
+      PORTFOLIO_DB_PASSWORD: ${PORTFOLIO_DB_PASSWORD:?PORTFOLIO_DB_PASSWORD is required}
+      TELEMETRY_DB_PASSWORD: ${TELEMETRY_DB_PASSWORD:?TELEMETRY_DB_PASSWORD is required}
+      INTELLIGENCE_DB_PASSWORD: ${INTELLIGENCE_DB_PASSWORD:?INTELLIGENCE_DB_PASSWORD is required}
+      DISPATCH_DB_PASSWORD: ${DISPATCH_DB_PASSWORD:?DISPATCH_DB_PASSWORD is required}
+      SETTLEMENT_DB_PASSWORD: ${SETTLEMENT_DB_PASSWORD:?SETTLEMENT_DB_PASSWORD is required}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?KEYCLOAK_DB_PASSWORD is required}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-6543}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./postgres/init/010-create-service-databases.sh:/docker-entrypoint-initdb.d/010-create-service-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    stop_grace_period: 30s
+
+volumes:
+  postgres_data:
