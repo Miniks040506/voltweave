@@ -10,15 +10,15 @@ spring:
     gateway:
       server:
         webflux:
-      routes:
-        - id: portfolio-organizations
-          uri: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
-          predicates:
-            - Path=/api/v1/organizations,/api/v1/organizations/**
-        - id: portfolio-sites
-          uri: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
-          predicates:
-            - Path=/api/v1/sites,/api/v1/sites/**
+          routes:
+            - id: portfolio-organizations
+              uri: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/organizations,/api/v1/organizations/**
+            - id: portfolio-sites
+              uri: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/sites,/api/v1/sites/**
 
 server:
   port: ${PORT:8080}
