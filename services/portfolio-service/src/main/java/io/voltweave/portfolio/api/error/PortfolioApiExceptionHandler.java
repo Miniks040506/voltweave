@@ -6,10 +6,14 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import io.voltweave.portfolio.http.CorrelationIdFilter;
+import io.voltweave.portfolio.device.application.exception.DeviceNotFoundException;
+import io.voltweave.portfolio.device.application.exception.DeviceProvisioningConflictException;
+import io.voltweave.portfolio.device.application.exception.IdempotencyKeyConflictException;
 import io.voltweave.portfolio.organization.application.exception.OrganizationNotFoundException;
 import io.voltweave.portfolio.site.application.exception.SiteNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,9 +30,15 @@ public class PortfolioApiExceptionHandler {
         return problem(HttpStatus.NOT_FOUND, "Site not found", request);
     }
 
+    @ExceptionHandler(DeviceNotFoundException.class)
+    ResponseEntity<ProblemDetail> deviceNotFound(HttpServletRequest request) {
+        return problem(HttpStatus.NOT_FOUND, "Device not found", request);
+    }
+
     @ExceptionHandler({
             MethodArgumentNotValidException.class,
             HttpMessageNotReadableException.class,
+            MissingRequestHeaderException.class,
             IllegalArgumentException.class
     })
     ResponseEntity<ProblemDetail> badRequest(HttpServletRequest request) {
@@ -38,6 +48,14 @@ public class PortfolioApiExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ProblemDetail> conflict(HttpServletRequest request) {
         return problem(HttpStatus.CONFLICT, "Resource already exists", request);
+    }
+
+    @ExceptionHandler({
+            IdempotencyKeyConflictException.class,
+            DeviceProvisioningConflictException.class
+    })
+    ResponseEntity<ProblemDetail> provisioningConflict(HttpServletRequest request) {
+        return problem(HttpStatus.CONFLICT, "Provisioning conflict", request);
     }
 
     private ResponseEntity<ProblemDetail> problem(

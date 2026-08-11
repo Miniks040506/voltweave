@@ -81,6 +81,11 @@ public class DeviceApplicationService {
     ) {
         var device = deviceRepository.findByIdForSubject(deviceId, subjectId)
                 .orElseThrow(() -> new DeviceNotFoundException(deviceId));
+        if (device.type() != DeviceType.BATTERY && device.type() != DeviceType.EV_CHARGER) {
+            throw new IllegalArgumentException(
+                    "Device type " + device.type() + " has no configurable settings"
+            );
+        }
         requireConfiguration(device.type(), command.battery(), command.evCharger());
         var now = Instant.now();
         var battery = battery(device, command.battery(), now);
