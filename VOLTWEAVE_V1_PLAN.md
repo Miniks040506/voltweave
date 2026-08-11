@@ -684,7 +684,7 @@ Versions are pinned in the repository and updated deliberately, not automaticall
 | IoT | Eclipse Mosquitto 2.x / MQTT 5 |
 | Cache | Redis 8.x |
 | Identity | Keycloak 26.7.x |
-| Frontend | Next.js 16.2.x, React, TypeScript, Tailwind CSS, Apache ECharts |
+| Frontend | Next.js 16.3.x, React, TypeScript, Tailwind CSS, Apache ECharts |
 | Observability | OpenTelemetry Java Agent, Micrometer, Prometheus, Grafana, Tempo, Loki |
 | Testing | JUnit 5, AssertJ, Testcontainers, Playwright, k6 |
 | Delivery | Docker, Docker Compose, Kubernetes + Kustomize, GitHub Actions, Trivy |
