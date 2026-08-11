@@ -54,14 +54,10 @@ services:
         condition: service_healthy
     healthcheck:
       test:
-        - CMD
-        - /bin/bash
-        - -c
-        - >-
-          exec 3<>/dev/tcp/127.0.0.1/9000 &&
-          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
-          IFS= read -r status <&3 &&
-          [[ "$${status}" == *" 200 "* ]]
+        - "CMD"
+        - "/bin/bash"
+        - "-c"
+        - 'exec 3<>/dev/tcp/127.0.0.1/9000 && printf ''GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n'' >&3 && IFS= read -r status <&3 && [[ "$${status}" == *" 200 "* ]]'
       interval: 5s
       timeout: 5s
       retries: 20
