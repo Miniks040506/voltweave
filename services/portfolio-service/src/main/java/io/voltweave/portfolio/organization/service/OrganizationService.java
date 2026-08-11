@@ -1,6 +1,7 @@
 package io.voltweave.portfolio.organization.service;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,5 +44,23 @@ public class OrganizationService {
         organizationRepository.insert(organization);
         memberRepository.insert(owner);
         return organization;
+    }
+
+    public Organization findForSubject(UUID organizationId, String subjectId) {
+        return organizationRepository.findByIdForSubject(organizationId, subjectId)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+    }
+
+    @Transactional
+    public OrganizationMember addMember(
+            UUID organizationId,
+            String actingSubjectId,
+            String subjectId,
+            OrganizationRole role
+    ) {
+        findForSubject(organizationId, actingSubjectId);
+        var member = OrganizationMember.active(organizationId, subjectId, role, Instant.now());
+        memberRepository.insert(member);
+        return member;
     }
 }
