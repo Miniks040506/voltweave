@@ -4,15 +4,18 @@ VoltWeave is a virtual power plant sandbox. It will simulate household energy
 assets, forecast flexibility, dispatch devices and settle rewards without
 requiring physical power hardware.
 
-The repository currently contains the first runnable vertical foundations:
+The repository currently contains the first runnable foundations:
 
-- `services/portfolio-service`: Spring Boot service for future tenant, site,
-  device and virtual power plant ownership.
+- `services/portfolio-service`: Spring Boot service with Flyway-managed
+  organization and membership persistence.
+- `services/intelligence-service`: pure Java battery, EV and deterministic
+  allocation domain rules.
+- `services/settlement-service`: pure Java delivered-energy integration.
 - `apps/web`: Next.js web application.
 - `docs/VOLTWEAVE_V1_PLAN.md`: V1 architecture and delivery plan.
 
-Only `portfolio-service` exists today. Other services will be introduced when
-their first real behavior is implemented, rather than as empty scaffolding.
+Deployable services are introduced with their first real behavior rather than
+as empty scaffolding.
 
 ## Requirements
 
@@ -64,14 +67,19 @@ rebuild all local databases and re-import the realm, add `--volumes` to the
 
 ## Run the backend
 
-On Windows PowerShell:
+Start the platform sandbox first, then run Portfolio on Windows PowerShell:
 
 ```powershell
+.\infrastructure\compose\verify.ps1
 .\mvnw.cmd -pl services/portfolio-service spring-boot:run
 ```
 
 The service starts on port `8081`. Check it at
 `http://localhost:8081/actuator/health`.
+
+Flyway applies pending Portfolio migrations during startup. Organization HTTP
+endpoints are intentionally added with JWT authorization in Task 5; the current
+public HTTP surface contains only Actuator health and info endpoints.
 
 ## Run the frontend
 
@@ -90,6 +98,9 @@ Backend:
 ```powershell
 .\mvnw.cmd --batch-mode verify
 ```
+
+Portfolio integration tests start PostgreSQL 18 through Testcontainers, so
+Docker must be running. Tests never write to the local Compose database.
 
 Frontend:
 
