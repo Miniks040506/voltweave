@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: telemetry-service
+  datasource:
+    url: ${TELEMETRY_DB_URL:jdbc:postgresql://localhost:6543/telemetry_db}
+    username: ${TELEMETRY_DB_USERNAME:telemetry_app}
+    password: ${TELEMETRY_DB_PASSWORD:local-telemetry-change-me}
+  flyway:
+    validate-migration-naming: true
+
+server:
+  port: ${PORT:8082}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Owns telemetry ingestion, history and digital twins
