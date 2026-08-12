@@ -61,6 +61,30 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "PASS Compose services are healthy"
 
+$expectedTopics = @(
+  "vw.audit.v1"
+  "vw.command.lifecycle.v1"
+  "vw.dispatch.lifecycle.v1"
+  "vw.portfolio.lifecycle.v1"
+  "vw.settlement.lifecycle.v1"
+  "vw.telemetry.normalized.v1"
+  "vw.telemetry.raw.v1"
+) -join "`n"
+$actualTopics = ""
+for ($attempt = 1; $attempt -le 20; $attempt++) {
+  $topicLines = & docker compose --env-file $EnvFile -f $composeFile exec -T `
+    kafka /opt/kafka/bin/kafka-topics.sh `
+    --bootstrap-server localhost:19092 --list
+  if ($LASTEXITCODE -eq 0) {
+    $actualTopics = ($topicLines | Sort-Object) -join "`n"
+    if ($actualTopics -eq $expectedTopics) {
+      break
+    }
+  }
+  Start-Sleep -Seconds 1
+}
+Assert-Equal "Kafka topics" $actualTopics $expectedTopics
+
 $expectedOwners = @(
   "dispatch_db:dispatch_app"
   "intelligence_db:intelligence_app"
