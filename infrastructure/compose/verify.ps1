@@ -55,11 +55,22 @@ if ($LASTEXITCODE -ne 0) {
   throw "Compose configuration is invalid."
 }
 
-& docker compose --env-file $EnvFile -f $composeFile up -d --wait
+& docker compose --env-file $EnvFile -f $composeFile up -d --wait `
+  postgres keycloak kafka mosquitto
 if ($LASTEXITCODE -ne 0) {
   throw "Sandbox did not become healthy."
 }
 Write-Host "PASS Compose services are healthy"
+
+& docker compose --env-file $EnvFile -f $composeFile up -d kafka-init
+if ($LASTEXITCODE -ne 0) {
+  throw "Kafka topic initializer did not start."
+}
+& docker compose --env-file $EnvFile -f $composeFile run --rm --no-deps mosquitto-init
+if ($LASTEXITCODE -ne 0) {
+  throw "Mosquitto telemetry identity initializer failed."
+}
+Write-Host "PASS one-shot initializers completed"
 
 $expectedTopics = @(
   "vw.audit.v1"
@@ -77,7 +88,7 @@ for ($attempt = 1; $attempt -le 20; $attempt++) {
     kafka /opt/kafka/bin/kafka-topics.sh `
     --bootstrap-server localhost:19092 --list
   if ($LASTEXITCODE -eq 0) {
-    $actualTopics = ($topicLines | Sort-Object) -join "`n"
+    $actualTopics = ($topicLines | Where-Object { $_ -like "vw.*" } | Sort-Object) -join "`n"
     if ($actualTopics -eq $expectedTopics) {
       break
     }
