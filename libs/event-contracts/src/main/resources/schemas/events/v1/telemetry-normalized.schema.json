@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voltweave.dev/schemas/events/v1/telemetry-normalized.schema.json",
+  "title": "Telemetry Normalized Payload V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "siteId", "deviceId", "sequenceNumber", "observedAt", "receivedAt",
+    "deviceType", "activePowerKw", "online", "quality"
+  ],
+  "properties": {
+    "siteId": { "type": "string", "format": "uuid" },
+    "deviceId": { "type": "string", "format": "uuid" },
+    "sequenceNumber": { "type": "integer", "minimum": 1 },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "receivedAt": { "type": "string", "format": "date-time" },
+    "deviceType": {
+      "enum": ["SMART_METER", "SOLAR_INVERTER", "BATTERY", "EV_CHARGER"]
+    },
+    "activePowerKw": { "type": "number" },
+    "socPercent": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+    "online": { "type": "boolean" },
+    "quality": {
+      "enum": ["VALID", "STALE", "OUT_OF_ORDER", "DUPLICATE", "ESTIMATED", "INVALID"]
+    }
+  }
+}

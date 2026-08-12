@@ -50,6 +50,11 @@ class JsonSchemaContractTests {
                         "siteId", "deviceId", "mqttTopic", "mqttQos",
                         "retained", "payloadBase64"
                 );
+        assertThat(requiredFields(schema("telemetry-normalized.schema.json")))
+                .containsExactlyInAnyOrder(
+                        "siteId", "deviceId", "sequenceNumber", "observedAt",
+                        "receivedAt", "deviceType", "activePowerKw", "online", "quality"
+                );
     }
 
     @Test
