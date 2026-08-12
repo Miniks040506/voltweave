@@ -36,7 +36,7 @@ public class PortfolioAccessClient {
     private record AccessCheckResponse(
             boolean allowed,
             UUID organizationId,
-            String role
+            String organizationRole
     ) {
     }
 }

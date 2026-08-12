@@ -55,7 +55,7 @@ class ForecastApplicationServiceTests {
         assertEquals(3L, result.version());
         assertEquals(4, result.points().size());
         assertEquals(0, result.points().getFirst().baselineGridImportKw()
-                .compareTo(new BigDecimal("10.667")));
+                .compareTo(new BigDecimal("14.000")));
         assertEquals(NOW.plus(Duration.ofMinutes(30)), result.validUntil());
         verify(repository).insert(result);
     }

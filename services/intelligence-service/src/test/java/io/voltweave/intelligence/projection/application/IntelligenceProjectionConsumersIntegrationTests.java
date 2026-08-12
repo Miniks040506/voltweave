@@ -1,6 +1,7 @@
 package io.voltweave.intelligence.projection.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -114,6 +115,22 @@ class IntelligenceProjectionConsumersIntegrationTests {
                 SELECT power_kw FROM energy_observations
                 WHERE energy_type = 'SOLAR_GENERATION'
                 """).query(BigDecimal.class).single().compareTo(new BigDecimal("3.250")));
+    }
+
+    @Test
+    void rejectsContradictoryMembershipEventsWithoutRecordingThem() {
+        var contradictory = portfolioRecord(
+                UUID.randomUUID(), EventTypes.VPP_SITE_ADDED,
+                PortfolioChangeTypeV1.REMOVED, NOW
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> consumers.consumePortfolio(contradictory)
+        );
+
+        assertEquals(0L, count("vpp_site_projection"));
+        assertEquals(0L, count("event_inbox"));
     }
 
     private ConsumerRecord<String, String> portfolioRecord(

@@ -21,7 +21,7 @@ class SameTimeWeightedAverageTests {
                 sample("2026-08-11T12:00:00Z", "18", "9")
         ));
 
-        assertEquals(0, result.baselineGridImportKw().compareTo(new BigDecimal("7.500")));
+        assertEquals(0, result.baselineGridImportKw().compareTo(new BigDecimal("14.500")));
         assertEquals(0, result.solarGenerationKw().compareTo(new BigDecimal("7.000")));
     }
 

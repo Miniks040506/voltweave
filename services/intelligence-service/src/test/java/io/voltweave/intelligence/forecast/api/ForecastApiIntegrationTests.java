@@ -102,7 +102,7 @@ class ForecastApiIntegrationTests {
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.modelVersion").value("1.0"))
                 .andExpect(jsonPath("$.points.length()").value(1))
-                .andExpect(jsonPath("$.points[0].baselineGridImportKw").value(8.667));
+                .andExpect(jsonPath("$.points[0].baselineGridImportKw").value(11.0));
         generate().andExpect(status().isCreated())
                 .andExpect(jsonPath("$.version").value(2));
 

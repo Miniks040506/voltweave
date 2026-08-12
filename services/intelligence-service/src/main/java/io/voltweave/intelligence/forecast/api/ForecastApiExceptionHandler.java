@@ -27,7 +27,7 @@ public class ForecastApiExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
     ResponseEntity<ProblemDetail> unavailable(HttpServletRequest request) {
-        return problem(request, HttpStatus.UNPROCESSABLE_ENTITY,
+        return problem(request, HttpStatus.UNPROCESSABLE_CONTENT,
                 "Forecast unavailable", "Required training data is unavailable.");
     }
 

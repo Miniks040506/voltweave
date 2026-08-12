@@ -69,7 +69,21 @@ public class IntelligenceProjectionConsumers {
         )) {
             return;
         }
-        boolean active = payload.changeType() == PortfolioChangeTypeV1.ADDED;
+        boolean active = switch (envelope.eventType()) {
+            case EventTypes.VPP_SITE_ADDED -> {
+                if (payload.changeType() != PortfolioChangeTypeV1.ADDED) {
+                    throw new IllegalArgumentException("Event type and change type disagree");
+                }
+                yield true;
+            }
+            case EventTypes.VPP_SITE_REMOVED -> {
+                if (payload.changeType() != PortfolioChangeTypeV1.REMOVED) {
+                    throw new IllegalArgumentException("Event type and change type disagree");
+                }
+                yield false;
+            }
+            default -> throw new IllegalArgumentException("Unsupported membership event");
+        };
         repository.projectVppSite(
                 envelope.tenantId(), payload.relatedResourceId(), payload.resourceId(),
                 active, envelope.occurredAt()
@@ -119,7 +133,7 @@ public class IntelligenceProjectionConsumers {
             if (value == null || !value.isObject()
                     || value.path("eventVersion").asInt() != 1
                     || !producer.equals(value.path("producer").asString())
-                    || !record.key().equals(value.path("partitionKey").asString())) {
+                    || !value.path("partitionKey").asString().equals(record.key())) {
                 throw new IllegalArgumentException("Unsupported event envelope");
             }
             return new Envelope(
