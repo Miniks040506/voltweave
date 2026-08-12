@@ -18,7 +18,7 @@ class ApiGatewayApplicationTests {
                 .extracting("id")
                 .containsExactly(
                         "portfolio-organizations", "portfolio-sites", "portfolio-devices",
-                        "portfolio-vpps"
+                        "portfolio-vpps", "portfolio-audit"
                 );
     }
 }
