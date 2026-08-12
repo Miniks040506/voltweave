@@ -121,7 +121,9 @@ public class MosquittoDynamicSecurityClient implements MqttBrokerAdmin {
         String clientId = "portfolio-provisioner-" + UUID.randomUUID();
         var response = new AtomicReference<String>();
         var received = new CountDownLatch(1);
-        try (var client = new MqttClient(brokerUri, clientId, new MemoryPersistence())) {
+        MqttClient client = null;
+        try {
+            client = new MqttClient(brokerUri, clientId, new MemoryPersistence());
             var options = new MqttConnectOptions();
             options.setUserName(username);
             options.setPassword(password.toCharArray());
@@ -144,6 +146,22 @@ public class MosquittoDynamicSecurityClient implements MqttBrokerAdmin {
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Mosquitto Dynamic Security request interrupted", exception);
+        } finally {
+            close(client);
+        }
+    }
+
+    private static void close(MqttClient client) {
+        if (client == null) {
+            return;
+        }
+        try {
+            if (client.isConnected()) {
+                client.disconnectForcibly();
+            }
+            client.close(true);
+        } catch (MqttException ignored) {
+            // The request result is more useful than a cleanup failure.
         }
     }
 
