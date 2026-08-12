@@ -107,10 +107,10 @@ class TelemetryStorageIntegrationTests {
                 INSERT INTO telemetry_points (
                     organization_id, site_id, device_id, sequence_number,
                     observed_at, received_at, device_type,
-                    active_power_kw, soc_percent, online
+                    active_power_kw, soc_percent, online, telemetry_quality
                 ) VALUES (
                     :organizationId, :siteId, :deviceId, 1,
-                    :observedAt, :receivedAt, 'BATTERY', 2.5, 101, TRUE
+                    :observedAt, :receivedAt, 'BATTERY', 2.5, 101, TRUE, 'VALID'
                 )
                 """)
                 .param("organizationId", UUID.randomUUID())
