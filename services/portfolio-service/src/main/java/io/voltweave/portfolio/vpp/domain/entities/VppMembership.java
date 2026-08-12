@@ -59,4 +59,14 @@ public record VppMembership(
                 VppMembershipStatus.REMOVED, participationWeight, joinedAt, now
         );
     }
+
+    public VppMembership activate(Instant now) {
+        if (status != VppMembershipStatus.REMOVED) {
+            throw new IllegalStateException("Only a removed membership can be activated");
+        }
+        return new VppMembership(
+                id, vppOrganizationId, siteOrganizationId, vppId, siteId,
+                VppMembershipStatus.ACTIVE, participationWeight, now, now
+        );
+    }
 }

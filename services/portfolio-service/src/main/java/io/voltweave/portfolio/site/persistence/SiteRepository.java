@@ -94,6 +94,22 @@ public class SiteRepository {
                 .optional();
     }
 
+    public Optional<Site> findVppEligibleById(UUID siteId) {
+        return jdbcClient.sql("""
+                SELECT s.*
+                FROM sites s
+                JOIN site_preferences p
+                  ON p.organization_id = s.organization_id
+                 AND p.site_id = s.id
+                WHERE s.id = :siteId
+                  AND s.status = 'ACTIVE'
+                  AND p.vpp_opt_in = TRUE
+                """)
+                .param("siteId", siteId)
+                .query(ROW_MAPPER)
+                .optional();
+    }
+
     private static void requireOneRow(int rows, String action) {
         if (rows != 1) {
             throw new IllegalStateException("Expected one " + action + " site, got " + rows);

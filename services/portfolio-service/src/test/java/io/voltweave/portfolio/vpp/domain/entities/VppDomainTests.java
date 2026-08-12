@@ -35,5 +35,7 @@ class VppDomainTests {
         assertThat(removed.status()).isEqualTo(VppMembershipStatus.REMOVED);
         assertThatThrownBy(() -> removed.remove(NOW.plusSeconds(2)))
                 .isInstanceOf(IllegalStateException.class);
+        assertThat(removed.activate(NOW.plusSeconds(2)).status())
+                .isEqualTo(VppMembershipStatus.ACTIVE);
     }
 }
