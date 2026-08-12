@@ -19,6 +19,10 @@ public class DeviceProvisioningRepository {
                     resultSet.getObject("organization_id", UUID.class),
                     resultSet.getObject("device_id", UUID.class),
                     ProvisioningStatus.valueOf(resultSet.getString("status")),
+                    resultSet.getString("mqtt_username"),
+                    resultSet.getString("mqtt_client_id"),
+                    timestamp(resultSet.getTimestamp("provisioned_at")),
+                    timestamp(resultSet.getTimestamp("revoked_at")),
                     resultSet.getTimestamp("created_at").toInstant(),
                     resultSet.getTimestamp("updated_at").toInstant()
             );
@@ -58,5 +62,36 @@ public class DeviceProvisioningRepository {
                 .param("requestId", requestId)
                 .query(ROW_MAPPER)
                 .optional();
+    }
+
+    public void update(DeviceProvisioningRequest request) {
+        int rows = jdbcClient.sql("""
+                UPDATE device_provisioning_requests
+                SET status = :status,
+                    mqtt_username = :mqttUsername,
+                    mqtt_client_id = :mqttClientId,
+                    provisioned_at = :provisionedAt,
+                    revoked_at = :revokedAt,
+                    updated_at = :updatedAt
+                WHERE organization_id = :organizationId AND id = :id
+                """)
+                .param("id", request.id())
+                .param("organizationId", request.organizationId())
+                .param("status", request.status().name())
+                .param("mqttUsername", request.mqttUsername())
+                .param("mqttClientId", request.mqttClientId())
+                .param("provisionedAt", request.provisionedAt() == null
+                        ? null : Timestamp.from(request.provisionedAt()))
+                .param("revokedAt", request.revokedAt() == null
+                        ? null : Timestamp.from(request.revokedAt()))
+                .param("updatedAt", Timestamp.from(request.updatedAt()))
+                .update();
+        if (rows != 1) {
+            throw new IllegalStateException("Expected one updated provisioning request");
+        }
+    }
+
+    private static java.time.Instant timestamp(Timestamp timestamp) {
+        return timestamp == null ? null : timestamp.toInstant();
     }
 }

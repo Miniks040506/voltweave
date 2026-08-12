@@ -69,6 +69,27 @@ public record Device(
         );
     }
 
+    public Device finishProvisioning(Instant now) {
+        if (status != DeviceLifecycleStatus.PROVISIONING) {
+            throw new IllegalStateException("Only a provisioning device can be provisioned");
+        }
+        return withStatus(DeviceLifecycleStatus.PROVISIONED, now);
+    }
+
+    public Device revokeCredential(Instant now) {
+        if (status != DeviceLifecycleStatus.PROVISIONED) {
+            throw new IllegalStateException("Only a provisioned device can be disabled");
+        }
+        return withStatus(DeviceLifecycleStatus.DISABLED, now);
+    }
+
+    private Device withStatus(DeviceLifecycleStatus newStatus, Instant now) {
+        return new Device(
+                id, organizationId, siteId, externalDeviceId, type, manufacturer, model,
+                ratedPowerKw, newStatus, communicationProtocol, createdAt, now
+        );
+    }
+
     private static String requireText(String value, String field, int maxLength) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(field + " is required");
