@@ -1,0 +1,10 @@
+package io.voltweave.portfolio.audit.domain.enums;
+
+public enum AuditAction {
+    ORGANIZATION_MEMBER_ADDED,
+    DEVICE_PROVISION_REQUESTED,
+    SITE_PREFERENCE_UPDATED,
+    VPP_SITE_ADDED,
+    VPP_SITE_REMOVED,
+    VPP_AUTOMATION_POLICY_UPDATED
+}
