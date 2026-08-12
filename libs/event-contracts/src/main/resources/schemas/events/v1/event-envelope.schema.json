@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voltweave.dev/schemas/events/v1/event-envelope.schema.json",
+  "title": "VoltWeave Event Envelope V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "producer",
+    "tenantId",
+    "correlationId",
+    "partitionKey",
+    "payload"
+  ],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "eventVersion": { "const": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "producer": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "causationId": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "partitionKey": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "payload": { "type": "object" }
+  }
+}

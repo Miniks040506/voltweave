@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voltweave.dev/schemas/events/v1/audit-recorded.schema.json",
+  "title": "Audit Recorded Payload V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "auditEntryId",
+    "actorType",
+    "actorId",
+    "action",
+    "resourceType",
+    "resourceId"
+  ],
+  "properties": {
+    "auditEntryId": { "type": "string", "format": "uuid" },
+    "actorType": { "enum": ["USER", "SERVICE"] },
+    "actorId": { "type": "string", "minLength": 1 },
+    "action": { "type": "string", "minLength": 1 },
+    "resourceType": { "type": "string", "minLength": 1 },
+    "resourceId": { "type": "string", "format": "uuid" }
+  }
+}

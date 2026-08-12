@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voltweave.dev/schemas/events/v1/portfolio-lifecycle.schema.json",
+  "title": "Portfolio Lifecycle Payload V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["resourceId", "resourceType", "changeType"],
+  "properties": {
+    "resourceId": { "type": "string", "format": "uuid" },
+    "resourceType": {
+      "enum": [
+        "ORGANIZATION_MEMBER",
+        "SITE_PREFERENCE",
+        "DEVICE",
+        "VPP_MEMBERSHIP",
+        "AUTOMATION_POLICY"
+      ]
+    },
+    "changeType": {
+      "enum": ["ADDED", "UPDATED", "PROVISION_REQUESTED", "REMOVED"]
+    },
+    "relatedResourceId": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    }
+  }
+}
