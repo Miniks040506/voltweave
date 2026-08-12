@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -23,6 +25,15 @@ public class PortfolioSecurityConfiguration {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/internal/**").access((authentication, context) -> {
+                            Object principal = authentication.get().getPrincipal();
+                            return new AuthorizationDecision(
+                                    principal instanceof Jwt jwt
+                                            && "voltweave-internal".equals(
+                                                    jwt.getClaimAsString("azp")
+                                            )
+                            );
+                        })
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(errors -> errors
