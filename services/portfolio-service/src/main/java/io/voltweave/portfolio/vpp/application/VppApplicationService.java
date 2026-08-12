@@ -6,12 +6,17 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.voltweave.contracts.events.EventTypes;
+import io.voltweave.contracts.events.portfolio.v1.PortfolioChangeTypeV1;
+import io.voltweave.contracts.events.portfolio.v1.PortfolioLifecyclePayloadV1;
+import io.voltweave.contracts.events.portfolio.v1.PortfolioResourceTypeV1;
 import io.voltweave.portfolio.audit.application.AuditService;
 import io.voltweave.portfolio.audit.domain.enums.AuditAction;
 import io.voltweave.portfolio.audit.domain.enums.AuditResourceType;
 import io.voltweave.portfolio.organization.application.OrganizationService;
 import io.voltweave.portfolio.organization.domain.enums.OrganizationStatus;
 import io.voltweave.portfolio.organization.domain.enums.OrganizationType;
+import io.voltweave.portfolio.messaging.application.PortfolioEventService;
 import io.voltweave.portfolio.site.persistence.SiteRepository;
 import io.voltweave.portfolio.vpp.application.command.CreateVppCommand;
 import io.voltweave.portfolio.vpp.application.command.UpdateAutomationPolicyCommand;
@@ -40,6 +45,7 @@ public class VppApplicationService {
     private final AutomationPolicyRepository policyRepository;
     private final VppCapacityRepository capacityRepository;
     private final AuditService auditService;
+    private final PortfolioEventService eventService;
 
     public VppApplicationService(
             OrganizationService organizationService,
@@ -48,7 +54,8 @@ public class VppApplicationService {
             VppMembershipRepository membershipRepository,
             AutomationPolicyRepository policyRepository,
             VppCapacityRepository capacityRepository,
-            AuditService auditService
+            AuditService auditService,
+            PortfolioEventService eventService
     ) {
         this.organizationService = organizationService;
         this.siteRepository = siteRepository;
@@ -57,6 +64,7 @@ public class VppApplicationService {
         this.policyRepository = policyRepository;
         this.capacityRepository = capacityRepository;
         this.auditService = auditService;
+        this.eventService = eventService;
     }
 
     @Transactional
@@ -104,9 +112,16 @@ public class VppApplicationService {
                     vpp, site.organizationId(), site.id(), now
             ));
         }
-        auditService.recordUserAction(
+        var audit = auditService.recordUserAction(
                 vpp.organizationId(), subjectId, AuditAction.VPP_SITE_ADDED,
                 AuditResourceType.VPP, vpp.id()
+        );
+        eventService.record(
+                vpp.organizationId(), EventTypes.VPP_SITE_ADDED, vpp.id(),
+                new PortfolioLifecyclePayloadV1(
+                        siteId, PortfolioResourceTypeV1.VPP_MEMBERSHIP,
+                        PortfolioChangeTypeV1.ADDED, vpp.id()
+                ), audit.correlationId()
         );
         return profile(vpp);
     }
@@ -118,9 +133,16 @@ public class VppApplicationService {
                 .filter(current -> current.status() == VppMembershipStatus.ACTIVE)
                 .orElseThrow(() -> new VppMembershipNotFoundException(siteId));
         membershipRepository.update(membership.remove(Instant.now()));
-        auditService.recordUserAction(
+        var audit = auditService.recordUserAction(
                 vpp.organizationId(), subjectId, AuditAction.VPP_SITE_REMOVED,
                 AuditResourceType.VPP, vpp.id()
+        );
+        eventService.record(
+                vpp.organizationId(), EventTypes.VPP_SITE_REMOVED, vpp.id(),
+                new PortfolioLifecyclePayloadV1(
+                        siteId, PortfolioResourceTypeV1.VPP_MEMBERSHIP,
+                        PortfolioChangeTypeV1.REMOVED, vpp.id()
+                ), audit.correlationId()
         );
         return profile(vpp);
     }
@@ -148,10 +170,17 @@ public class VppApplicationService {
                 command.effectiveFrom(), Instant.now()
         );
         policyRepository.insert(updated);
-        auditService.recordUserAction(
+        var audit = auditService.recordUserAction(
                 vpp.organizationId(), subjectId,
                 AuditAction.VPP_AUTOMATION_POLICY_UPDATED,
                 AuditResourceType.VPP, vpp.id()
+        );
+        eventService.record(
+                vpp.organizationId(), EventTypes.VPP_AUTOMATION_POLICY_UPDATED, vpp.id(),
+                new PortfolioLifecyclePayloadV1(
+                        vpp.id(), PortfolioResourceTypeV1.AUTOMATION_POLICY,
+                        PortfolioChangeTypeV1.UPDATED, null
+                ), audit.correlationId()
         );
         return profile(vpp);
     }

@@ -11,6 +11,10 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.voltweave.contracts.events.EventTypes;
+import io.voltweave.contracts.events.portfolio.v1.PortfolioChangeTypeV1;
+import io.voltweave.contracts.events.portfolio.v1.PortfolioLifecyclePayloadV1;
+import io.voltweave.contracts.events.portfolio.v1.PortfolioResourceTypeV1;
 import io.voltweave.portfolio.audit.application.AuditService;
 import io.voltweave.portfolio.audit.domain.enums.AuditAction;
 import io.voltweave.portfolio.audit.domain.enums.AuditResourceType;
@@ -24,6 +28,7 @@ import io.voltweave.portfolio.device.persistence.ApiIdempotencyRepository;
 import io.voltweave.portfolio.device.persistence.ApiIdempotencyRepository.Entry;
 import io.voltweave.portfolio.device.persistence.DeviceProvisioningRepository;
 import io.voltweave.portfolio.device.persistence.DeviceRepository;
+import io.voltweave.portfolio.messaging.application.PortfolioEventService;
 
 @Service
 public class DeviceProvisioningApplicationService {
@@ -33,17 +38,20 @@ public class DeviceProvisioningApplicationService {
     private final DeviceProvisioningRepository provisioningRepository;
     private final ApiIdempotencyRepository idempotencyRepository;
     private final AuditService auditService;
+    private final PortfolioEventService eventService;
 
     public DeviceProvisioningApplicationService(
             DeviceRepository deviceRepository,
             DeviceProvisioningRepository provisioningRepository,
             ApiIdempotencyRepository idempotencyRepository,
-            AuditService auditService
+            AuditService auditService,
+            PortfolioEventService eventService
     ) {
         this.deviceRepository = deviceRepository;
         this.provisioningRepository = provisioningRepository;
         this.idempotencyRepository = idempotencyRepository;
         this.auditService = auditService;
+        this.eventService = eventService;
     }
 
     @Transactional
@@ -82,9 +90,16 @@ public class DeviceProvisioningApplicationService {
         }
         deviceRepository.update(device.beginProvisioning(now));
         provisioningRepository.insert(request);
-        auditService.recordUserAction(
+        var audit = auditService.recordUserAction(
                 device.organizationId(), subjectId, AuditAction.DEVICE_PROVISION_REQUESTED,
                 AuditResourceType.DEVICE, device.id()
+        );
+        eventService.record(
+                device.organizationId(), EventTypes.DEVICE_PROVISION_REQUESTED, device.id(),
+                new PortfolioLifecyclePayloadV1(
+                        device.id(), PortfolioResourceTypeV1.DEVICE,
+                        PortfolioChangeTypeV1.PROVISION_REQUESTED, null
+                ), audit.correlationId()
         );
         return request;
     }

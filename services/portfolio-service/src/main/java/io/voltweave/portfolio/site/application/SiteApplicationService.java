@@ -6,6 +6,10 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.voltweave.contracts.events.EventTypes;
+import io.voltweave.contracts.events.portfolio.v1.PortfolioChangeTypeV1;
+import io.voltweave.contracts.events.portfolio.v1.PortfolioLifecyclePayloadV1;
+import io.voltweave.contracts.events.portfolio.v1.PortfolioResourceTypeV1;
 import io.voltweave.portfolio.audit.application.AuditService;
 import io.voltweave.portfolio.audit.domain.enums.AuditAction;
 import io.voltweave.portfolio.audit.domain.enums.AuditResourceType;
@@ -19,6 +23,7 @@ import io.voltweave.portfolio.site.domain.entities.Site;
 import io.voltweave.portfolio.site.domain.entities.SitePreference;
 import io.voltweave.portfolio.site.persistence.SitePreferenceRepository;
 import io.voltweave.portfolio.site.persistence.SiteRepository;
+import io.voltweave.portfolio.messaging.application.PortfolioEventService;
 
 @Service
 public class SiteApplicationService {
@@ -26,17 +31,20 @@ public class SiteApplicationService {
     private final SiteRepository siteRepository;
     private final SitePreferenceRepository preferenceRepository;
     private final AuditService auditService;
+    private final PortfolioEventService eventService;
 
     public SiteApplicationService(
             OrganizationService organizationService,
             SiteRepository siteRepository,
             SitePreferenceRepository preferenceRepository,
-            AuditService auditService
+            AuditService auditService,
+            PortfolioEventService eventService
     ) {
         this.organizationService = organizationService;
         this.siteRepository = siteRepository;
         this.preferenceRepository = preferenceRepository;
         this.auditService = auditService;
+        this.eventService = eventService;
     }
 
     @Transactional
@@ -89,9 +97,16 @@ public class SiteApplicationService {
                 command.vppOptIn(), command.minimumBatteryReservePercent(), Instant.now()
         );
         preferenceRepository.update(updated);
-        auditService.recordUserAction(
+        var audit = auditService.recordUserAction(
                 site.organizationId(), subjectId, AuditAction.SITE_PREFERENCE_UPDATED,
                 AuditResourceType.SITE, site.id()
+        );
+        eventService.record(
+                site.organizationId(), EventTypes.SITE_PREFERENCE_UPDATED, site.id(),
+                new PortfolioLifecyclePayloadV1(
+                        site.id(), PortfolioResourceTypeV1.SITE_PREFERENCE,
+                        PortfolioChangeTypeV1.UPDATED, null
+                ), audit.correlationId()
         );
         return new SiteProfile(site, updated);
     }
