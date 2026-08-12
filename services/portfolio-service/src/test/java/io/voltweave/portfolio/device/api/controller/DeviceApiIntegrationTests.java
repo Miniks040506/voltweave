@@ -3,6 +3,7 @@ package io.voltweave.portfolio.device.api.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -133,16 +134,19 @@ class DeviceApiIntegrationTests {
         UUID siteId = createSite(subject);
         String deviceId = createDevice(subject, meterRequest(siteId));
 
-        String first = provision(subject, deviceId, "provision-request-1", 202);
-        String replay = provision(subject, deviceId, "provision-request-1", 202);
+        String first = provision(subject, deviceId, "provision-request-1", 201);
+        String replay = provision(subject, deviceId, "provision-request-1", 200);
 
         assertThat(JsonPath.<String>read(replay, "$.id"))
                 .isEqualTo(JsonPath.<String>read(first, "$.id"));
+        assertThat(JsonPath.<String>read(first, "$.credential.password"))
+                .isEqualTo("one-time-test-password");
+        assertThat((Object) JsonPath.read(replay, "$.credential")).isNull();
         assertThat(jdbcClient.sql("SELECT count(*) FROM device_provisioning_requests")
                 .query(Integer.class).single()).isEqualTo(1);
         mockMvc.perform(get("/api/v1/devices/{deviceId}", deviceId)
                         .with(customer(subject)))
-                .andExpect(jsonPath("$.status").value("PROVISIONING"));
+                .andExpect(jsonPath("$.status").value("PROVISIONED"));
     }
 
     @Test
@@ -152,8 +156,31 @@ class DeviceApiIntegrationTests {
         String first = createDevice(subject, meterRequest(siteId));
         String second = createDevice(subject, meterRequest(siteId));
 
-        provision(subject, first, "shared-key", 202);
+        provision(subject, first, "shared-key", 201);
         provision(subject, second, "shared-key", 409);
+    }
+
+    @Test
+    void revokesCredentialIdempotently() throws Exception {
+        String subject = "revocation-owner";
+        UUID siteId = createSite(subject);
+        String deviceId = createDevice(subject, meterRequest(siteId));
+        provision(subject, deviceId, "revoke-me", 201);
+
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mockMvc.perform(delete("/api/v1/devices/{deviceId}/credentials", deviceId)
+                            .with(customer(subject)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("REVOKED"))
+                    .andExpect(jsonPath("$.credential").doesNotExist());
+        }
+        mockMvc.perform(get("/api/v1/devices/{deviceId}", deviceId)
+                        .with(customer(subject)))
+                .andExpect(jsonPath("$.status").value("DISABLED"));
+        assertThat(jdbcClient.sql("""
+                SELECT count(*) FROM audit_entries
+                WHERE action = 'DEVICE_CREDENTIAL_REVOKED'
+                """).query(Integer.class).single()).isEqualTo(1);
     }
 
     @Test
