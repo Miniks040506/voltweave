@@ -3,7 +3,7 @@ package io.voltweave.portfolio.site.api.response;
 import java.time.Instant;
 import java.util.UUID;
 
-import io.voltweave.portfolio.site.application.SiteProfile;
+import io.voltweave.portfolio.site.application.model.SiteProfile;
 import io.voltweave.portfolio.site.domain.enums.SiteStatus;
 
 public record SiteResponse(

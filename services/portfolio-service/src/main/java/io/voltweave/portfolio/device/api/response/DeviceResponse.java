@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-import io.voltweave.portfolio.device.application.DeviceProfile;
+import io.voltweave.portfolio.device.application.model.DeviceProfile;
 import io.voltweave.portfolio.device.domain.enums.CommunicationProtocol;
 import io.voltweave.portfolio.device.domain.enums.DeviceLifecycleStatus;
 import io.voltweave.portfolio.device.domain.enums.DeviceType;

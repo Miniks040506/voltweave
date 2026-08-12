@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.device.application;
+package io.voltweave.portfolio.device.application.model;
 
 import io.voltweave.portfolio.device.domain.entities.BatteryConfiguration;
 import io.voltweave.portfolio.device.domain.entities.Device;

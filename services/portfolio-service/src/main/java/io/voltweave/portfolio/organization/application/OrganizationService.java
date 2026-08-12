@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.voltweave.portfolio.organization.application.command.CreateOrganizationCommand;
 import io.voltweave.portfolio.organization.application.exception.OrganizationNotFoundException;
 import io.voltweave.portfolio.organization.domain.entities.Organization;
 import io.voltweave.portfolio.organization.domain.entities.OrganizationMember;

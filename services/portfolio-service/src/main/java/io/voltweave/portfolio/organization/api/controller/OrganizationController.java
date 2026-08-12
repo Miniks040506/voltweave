@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import io.voltweave.portfolio.organization.api.request.AddOrganizationMemberRequest;
 import io.voltweave.portfolio.organization.api.request.CreateOrganizationRequest;
 import io.voltweave.portfolio.organization.api.response.OrganizationResponse;
-import io.voltweave.portfolio.organization.application.CreateOrganizationCommand;
 import io.voltweave.portfolio.organization.application.OrganizationService;
+import io.voltweave.portfolio.organization.application.command.CreateOrganizationCommand;
 import jakarta.validation.Valid;
 
 @RestController

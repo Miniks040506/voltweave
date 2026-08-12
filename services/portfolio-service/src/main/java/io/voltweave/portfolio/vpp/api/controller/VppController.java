@@ -20,9 +20,9 @@ import io.voltweave.portfolio.vpp.api.request.CreateVppRequest;
 import io.voltweave.portfolio.vpp.api.request.UpdateAutomationPolicyRequest;
 import io.voltweave.portfolio.vpp.api.response.VppCapacityResponse;
 import io.voltweave.portfolio.vpp.api.response.VppResponse;
-import io.voltweave.portfolio.vpp.application.CreateVppCommand;
-import io.voltweave.portfolio.vpp.application.UpdateAutomationPolicyCommand;
 import io.voltweave.portfolio.vpp.application.VppApplicationService;
+import io.voltweave.portfolio.vpp.application.command.CreateVppCommand;
+import io.voltweave.portfolio.vpp.application.command.UpdateAutomationPolicyCommand;
 import jakarta.validation.Valid;
 
 @RestController

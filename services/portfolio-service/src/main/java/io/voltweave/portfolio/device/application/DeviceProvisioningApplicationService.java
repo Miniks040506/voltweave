@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.voltweave.portfolio.device.application.model.DeviceProfile;
 import io.voltweave.portfolio.device.application.exception.DeviceNotFoundException;
 import io.voltweave.portfolio.device.application.exception.DeviceProvisioningConflictException;
 import io.voltweave.portfolio.device.application.exception.IdempotencyKeyConflictException;

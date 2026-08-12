@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.vpp.application;
+package io.voltweave.portfolio.vpp.application.command;
 
 import java.util.UUID;
 

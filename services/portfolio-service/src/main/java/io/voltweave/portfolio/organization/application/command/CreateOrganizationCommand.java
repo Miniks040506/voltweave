@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.organization.application;
+package io.voltweave.portfolio.organization.application.command;
 
 import io.voltweave.portfolio.organization.domain.enums.OrganizationType;
 

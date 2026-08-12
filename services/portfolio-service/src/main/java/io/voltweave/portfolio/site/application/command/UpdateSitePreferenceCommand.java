@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.site.application;
+package io.voltweave.portfolio.site.application.command;
 
 public record UpdateSitePreferenceCommand(
         boolean vppOptIn,

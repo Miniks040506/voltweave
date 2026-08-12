@@ -7,7 +7,12 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.voltweave.portfolio.device.application.command.BatteryConfigurationCommand;
+import io.voltweave.portfolio.device.application.command.EvChargerConfigurationCommand;
+import io.voltweave.portfolio.device.application.command.RegisterDeviceCommand;
+import io.voltweave.portfolio.device.application.command.UpdateDeviceSettingsCommand;
 import io.voltweave.portfolio.device.application.exception.DeviceNotFoundException;
+import io.voltweave.portfolio.device.application.model.DeviceProfile;
 import io.voltweave.portfolio.device.domain.entities.BatteryConfiguration;
 import io.voltweave.portfolio.device.domain.entities.Device;
 import io.voltweave.portfolio.device.domain.entities.EvChargerConfiguration;

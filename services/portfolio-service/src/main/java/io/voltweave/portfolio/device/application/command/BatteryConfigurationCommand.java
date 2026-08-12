@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.device.application;
+package io.voltweave.portfolio.device.application.command;
 
 import java.math.BigDecimal;
 

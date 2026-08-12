@@ -1,4 +1,4 @@
-package io.voltweave.portfolio.device.application;
+package io.voltweave.portfolio.device.application.command;
 
 public record UpdateDeviceSettingsCommand(
         BatteryConfigurationCommand battery,

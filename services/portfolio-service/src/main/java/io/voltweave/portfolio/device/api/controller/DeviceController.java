@@ -22,12 +22,12 @@ import io.voltweave.portfolio.device.api.request.EvChargerConfigurationRequest;
 import io.voltweave.portfolio.device.api.request.UpdateDeviceSettingsRequest;
 import io.voltweave.portfolio.device.api.response.DeviceProvisioningResponse;
 import io.voltweave.portfolio.device.api.response.DeviceResponse;
-import io.voltweave.portfolio.device.application.BatteryConfigurationCommand;
 import io.voltweave.portfolio.device.application.DeviceApplicationService;
 import io.voltweave.portfolio.device.application.DeviceProvisioningApplicationService;
-import io.voltweave.portfolio.device.application.EvChargerConfigurationCommand;
-import io.voltweave.portfolio.device.application.RegisterDeviceCommand;
-import io.voltweave.portfolio.device.application.UpdateDeviceSettingsCommand;
+import io.voltweave.portfolio.device.application.command.BatteryConfigurationCommand;
+import io.voltweave.portfolio.device.application.command.EvChargerConfigurationCommand;
+import io.voltweave.portfolio.device.application.command.RegisterDeviceCommand;
+import io.voltweave.portfolio.device.application.command.UpdateDeviceSettingsCommand;
 import jakarta.validation.Valid;
 
 @RestController

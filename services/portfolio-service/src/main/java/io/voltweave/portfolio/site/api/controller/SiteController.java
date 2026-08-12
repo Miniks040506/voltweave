@@ -20,10 +20,10 @@ import io.voltweave.portfolio.site.api.request.CreateSiteRequest;
 import io.voltweave.portfolio.site.api.request.UpdateSitePreferenceRequest;
 import io.voltweave.portfolio.site.api.request.UpdateSiteRequest;
 import io.voltweave.portfolio.site.api.response.SiteResponse;
-import io.voltweave.portfolio.site.application.CreateSiteCommand;
 import io.voltweave.portfolio.site.application.SiteApplicationService;
-import io.voltweave.portfolio.site.application.UpdateSiteCommand;
-import io.voltweave.portfolio.site.application.UpdateSitePreferenceCommand;
+import io.voltweave.portfolio.site.application.command.CreateSiteCommand;
+import io.voltweave.portfolio.site.application.command.UpdateSiteCommand;
+import io.voltweave.portfolio.site.application.command.UpdateSitePreferenceCommand;
 import jakarta.validation.Valid;
 
 @RestController

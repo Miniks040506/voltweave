@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import io.voltweave.portfolio.vpp.application.VppProfile;
+import io.voltweave.portfolio.vpp.application.model.VppProfile;
 import io.voltweave.portfolio.vpp.domain.enums.VppStatus;
 
 public record VppResponse(

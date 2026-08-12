@@ -24,8 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.jayway.jsonpath.JsonPath;
 
 import io.voltweave.portfolio.PostgresTestConfiguration;
-import io.voltweave.portfolio.organization.application.CreateOrganizationCommand;
 import io.voltweave.portfolio.organization.application.OrganizationService;
+import io.voltweave.portfolio.organization.application.command.CreateOrganizationCommand;
 import io.voltweave.portfolio.organization.domain.enums.OrganizationType;
 
 @SpringBootTest
