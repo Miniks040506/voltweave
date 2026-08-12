@@ -60,6 +60,16 @@ class TelemetryStorageIntegrationTests {
                   )
                 """)).isEqualTo("6");
         assertThat(value("""
+                SELECT count(*) FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND (
+                    (table_name = 'telemetry_points' AND column_name = 'telemetry_quality')
+                    OR (table_name = 'device_twins' AND column_name IN (
+                      'last_received_at', 'telemetry_quality'
+                    ))
+                  )
+                """)).isEqualTo("3");
+        assertThat(value("""
                 SELECT count(*) FROM pg_tables
                 WHERE schemaname = 'public'
                   AND tablename IN (
@@ -101,6 +111,27 @@ class TelemetryStorageIntegrationTests {
                 ) VALUES (
                     :organizationId, :siteId, :deviceId, 1,
                     :observedAt, :receivedAt, 'BATTERY', 2.5, 101, TRUE
+                )
+                """)
+                .param("organizationId", UUID.randomUUID())
+                .param("siteId", UUID.randomUUID())
+                .param("deviceId", UUID.randomUUID())
+                .param("observedAt", timestamp("2026-08-12T12:00:00Z"))
+                .param("receivedAt", timestamp("2026-08-12T12:00:01Z"))
+                .update()).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void acceptedStorageRejectsNonAcceptedQuality() {
+        assertThatThrownBy(() -> jdbcClient.sql("""
+                INSERT INTO telemetry_points (
+                    organization_id, site_id, device_id, sequence_number,
+                    observed_at, received_at, device_type, active_power_kw,
+                    online, telemetry_quality
+                ) VALUES (
+                    :organizationId, :siteId, :deviceId, 1,
+                    :observedAt, :receivedAt, 'SMART_METER', 2.5,
+                    TRUE, 'INVALID'
                 )
                 """)
                 .param("organizationId", UUID.randomUUID())
