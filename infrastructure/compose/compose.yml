@@ -106,6 +106,34 @@ services:
         condition: service_healthy
     restart: "no"
 
+  mosquitto:
+    image: eclipse-mosquitto:2.0.22
+    entrypoint: ["/bin/sh", "/opt/voltweave/entrypoint.sh"]
+    environment:
+      MOSQUITTO_ADMIN_USERNAME: ${MOSQUITTO_ADMIN_USERNAME:?MOSQUITTO_ADMIN_USERNAME is required}
+      MOSQUITTO_ADMIN_PASSWORD: ${MOSQUITTO_ADMIN_PASSWORD:?MOSQUITTO_ADMIN_PASSWORD is required}
+    ports:
+      - "127.0.0.1:${MQTT_HOST_PORT:-1883}:1883"
+    volumes:
+      - mosquitto_data:/mosquitto/data
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/entrypoint.sh:/opt/voltweave/entrypoint.sh:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          mosquitto_ctrl -h localhost -p 1883
+          -u "$${MOSQUITTO_ADMIN_USERNAME}"
+          -P "$${MOSQUITTO_ADMIN_PASSWORD}"
+          dynsec listRoles 2>/dev/null | grep -q admin
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    mem_limit: 256m
+    stop_grace_period: 15s
+
 volumes:
   postgres_data:
   kafka_data:
+  mosquitto_data:

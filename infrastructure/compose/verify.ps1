@@ -63,6 +63,7 @@ Write-Host "PASS Compose services are healthy"
 
 $expectedTopics = @(
   "vw.audit.v1"
+  "vw.audit.v1.dlq"
   "vw.command.lifecycle.v1"
   "vw.dispatch.lifecycle.v1"
   "vw.portfolio.lifecycle.v1"
@@ -84,6 +85,17 @@ for ($attempt = 1; $attempt -le 20; $attempt++) {
   Start-Sleep -Seconds 1
 }
 Assert-Equal "Kafka topics" $actualTopics $expectedTopics
+
+$mqttAdminResult = & docker compose --env-file $EnvFile -f $composeFile exec -T `
+  mosquitto mosquitto_ctrl -h localhost -p 1883 `
+  -u (Get-Setting "MOSQUITTO_ADMIN_USERNAME") `
+  -P (Get-Setting "MOSQUITTO_ADMIN_PASSWORD") `
+  dynsec listRoles
+if ($LASTEXITCODE -ne 0) {
+  throw "Mosquitto Dynamic Security admin authentication failed."
+}
+Assert-Equal "Mosquitto Dynamic Security" `
+  (($mqttAdminResult -join "`n") -match "admin") $true
 
 $expectedOwners = @(
   "dispatch_db:dispatch_app"
