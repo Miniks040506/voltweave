@@ -1,6 +1,7 @@
 package io.voltweave.contracts.events;
 
 public final class EventTypes {
+    public static final String TELEMETRY_RAW_RECEIVED = "TelemetryRawReceived";
     public static final String ORGANIZATION_MEMBER_ADDED = "OrganizationMemberAdded";
     public static final String DEVICE_PROVISION_REQUESTED = "DeviceProvisionRequested";
     public static final String DEVICE_CREDENTIAL_REVOKED = "DeviceCredentialRevoked";

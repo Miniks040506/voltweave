@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voltweave.dev/schemas/events/v1/telemetry-raw.schema.json",
+  "title": "Telemetry Raw Payload V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "siteId",
+    "deviceId",
+    "mqttTopic",
+    "mqttQos",
+    "retained",
+    "payloadBase64"
+  ],
+  "properties": {
+    "siteId": { "type": "string", "format": "uuid" },
+    "deviceId": { "type": "string", "format": "uuid" },
+    "mqttTopic": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "mqttQos": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "retained": { "type": "boolean" },
+    "payloadBase64": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1400000,
+      "contentEncoding": "base64"
+    }
+  }
+}

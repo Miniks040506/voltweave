@@ -45,6 +45,11 @@ class JsonSchemaContractTests {
                         "auditEntryId", "actorType", "actorId", "action",
                         "resourceType", "resourceId"
                 );
+        assertThat(requiredFields(schema("telemetry-raw.schema.json")))
+                .containsExactlyInAnyOrder(
+                        "siteId", "deviceId", "mqttTopic", "mqttQos",
+                        "retained", "payloadBase64"
+                );
     }
 
     @Test
