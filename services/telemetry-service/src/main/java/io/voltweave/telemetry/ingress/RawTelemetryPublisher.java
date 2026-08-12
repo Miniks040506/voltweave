@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +24,7 @@ class RawTelemetryPublisher {
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
+    @Autowired
     RawTelemetryPublisher(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this(kafkaTemplate, objectMapper, Clock.systemUTC());
     }
