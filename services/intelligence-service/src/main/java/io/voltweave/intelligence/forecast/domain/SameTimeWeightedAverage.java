@@ -39,9 +39,8 @@ public final class SameTimeWeightedAverage {
             weightTotal = weightTotal.add(weight);
         }
 
-        return new ForecastValue(
-                loadTotal.divide(weightTotal, SCALE, RoundingMode.HALF_UP),
-                solarTotal.divide(weightTotal, SCALE, RoundingMode.HALF_UP)
-        );
+        var load = loadTotal.divide(weightTotal, SCALE, RoundingMode.HALF_UP);
+        var solar = solarTotal.divide(weightTotal, SCALE, RoundingMode.HALF_UP);
+        return new ForecastValue(load.subtract(solar), solar);
     }
 }
