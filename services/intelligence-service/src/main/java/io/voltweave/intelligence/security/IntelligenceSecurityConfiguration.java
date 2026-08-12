@@ -3,10 +3,13 @@ package io.voltweave.intelligence.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration(proxyBeanMethods = false)
+@EnableMethodSecurity
 public class IntelligenceSecurityConfiguration {
     @Bean
     SecurityFilterChain intelligenceSecurityFilterChain(
@@ -26,7 +29,14 @@ public class IntelligenceSecurityConfiguration {
                                 problems.unauthorized(request, response))
                         .accessDeniedHandler((request, response, exception) ->
                                 problems.forbidden(request, response)))
-                .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> {}))
+                .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt
+                        .jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .build();
+    }
+
+    private JwtAuthenticationConverter jwtAuthenticationConverter() {
+        var converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(new KeycloakRealmRoleConverter());
+        return converter;
     }
 }
