@@ -13,6 +13,13 @@ spring:
       acks: all
       properties:
         enable.idempotence: true
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        isolation.level: read_committed
+    listener:
+      ack-mode: record
 
 server:
   port: ${PORT:8082}
@@ -39,3 +46,8 @@ voltweave:
     username: ${MQTT_TELEMETRY_USERNAME:telemetry-service}
     password: ${MQTT_TELEMETRY_PASSWORD:local-telemetry-mqtt-change-me}
     topic: voltweave/+/+/+/telemetry
+  processing:
+    enabled: ${TELEMETRY_PROCESSING_ENABLED:true}
+    stale-after: ${TELEMETRY_STALE_AFTER:5m}
+    out-of-order-window: ${TELEMETRY_OUT_OF_ORDER_WINDOW:2m}
+    dedup-retention: ${TELEMETRY_DEDUP_RETENTION:7d}

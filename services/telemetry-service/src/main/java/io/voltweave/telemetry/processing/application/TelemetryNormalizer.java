@@ -49,7 +49,14 @@ public class TelemetryNormalizer {
             Instant receivedAt,
             Optional<TelemetryCursor> cursor
     ) {
-        TelemetryTopic topic = TelemetryTopic.parse(raw.mqttTopic());
+        TelemetryTopic topic;
+        try {
+            topic = TelemetryTopic.parse(raw.mqttTopic());
+        } catch (IllegalArgumentException exception) {
+            throw new TelemetryValidationException(
+                    "INVALID_TOPIC", "Invalid telemetry MQTT topic", exception
+            );
+        }
         if (!organizationId.equals(topic.organizationId())
                 || !raw.siteId().equals(topic.siteId())
                 || !raw.deviceId().equals(topic.deviceId())) {

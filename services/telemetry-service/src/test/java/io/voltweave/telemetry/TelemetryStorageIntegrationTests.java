@@ -19,7 +19,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(properties = "voltweave.ingress.enabled=false")
+@SpringBootTest(properties = {
+        "voltweave.ingress.enabled=false",
+        "voltweave.processing.enabled=false"
+})
 @Import(TimescaleTestConfiguration.class)
 @AutoConfigureMockMvc
 class TelemetryStorageIntegrationTests {

@@ -9,6 +9,8 @@ import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import io.voltweave.telemetry.processing.application.model.TelemetryCursor;
+
 @Repository
 public class TelemetryProcessingRepository {
     private final JdbcClient jdbcClient;
@@ -58,18 +60,20 @@ public class TelemetryProcessingRepository {
                 .update() == 1;
     }
 
-    public Optional<Instant> latestObservedAt(UUID organizationId, UUID deviceId) {
+    public Optional<TelemetryCursor> latestCursor(UUID organizationId, UUID deviceId) {
         return jdbcClient.sql("""
-                SELECT max(observed_at) AS latest
+                SELECT max(sequence_number) AS sequence_number,
+                       max(observed_at) AS observed_at
                 FROM telemetry_dedup
                 WHERE organization_id = :organizationId AND device_id = :deviceId
                 """)
                 .param("organizationId", organizationId)
                 .param("deviceId", deviceId)
-                .query((resultSet, rowNumber) -> {
-                    Timestamp value = resultSet.getTimestamp("latest");
-                    return value == null ? null : value.toInstant();
-                })
+                .query((resultSet, rowNumber) -> resultSet.getObject("sequence_number") == null
+                        ? null : new TelemetryCursor(
+                                resultSet.getLong("sequence_number"),
+                                resultSet.getTimestamp("observed_at").toInstant()
+                        ))
                 .optional();
     }
 
