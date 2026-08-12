@@ -6,6 +6,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.voltweave.portfolio.audit.application.AuditService;
+import io.voltweave.portfolio.audit.domain.enums.AuditAction;
+import io.voltweave.portfolio.audit.domain.enums.AuditResourceType;
 import io.voltweave.portfolio.organization.application.OrganizationService;
 import io.voltweave.portfolio.site.application.command.CreateSiteCommand;
 import io.voltweave.portfolio.site.application.command.UpdateSiteCommand;
@@ -22,15 +25,18 @@ public class SiteApplicationService {
     private final OrganizationService organizationService;
     private final SiteRepository siteRepository;
     private final SitePreferenceRepository preferenceRepository;
+    private final AuditService auditService;
 
     public SiteApplicationService(
             OrganizationService organizationService,
             SiteRepository siteRepository,
-            SitePreferenceRepository preferenceRepository
+            SitePreferenceRepository preferenceRepository,
+            AuditService auditService
     ) {
         this.organizationService = organizationService;
         this.siteRepository = siteRepository;
         this.preferenceRepository = preferenceRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -83,6 +89,10 @@ public class SiteApplicationService {
                 command.vppOptIn(), command.minimumBatteryReservePercent(), Instant.now()
         );
         preferenceRepository.update(updated);
+        auditService.recordUserAction(
+                site.organizationId(), subjectId, AuditAction.SITE_PREFERENCE_UPDATED,
+                AuditResourceType.SITE, site.id()
+        );
         return new SiteProfile(site, updated);
     }
 

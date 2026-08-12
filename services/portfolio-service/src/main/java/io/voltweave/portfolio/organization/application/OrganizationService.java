@@ -6,6 +6,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.voltweave.portfolio.audit.application.AuditService;
+import io.voltweave.portfolio.audit.domain.enums.AuditAction;
+import io.voltweave.portfolio.audit.domain.enums.AuditResourceType;
 import io.voltweave.portfolio.organization.application.command.CreateOrganizationCommand;
 import io.voltweave.portfolio.organization.application.exception.OrganizationNotFoundException;
 import io.voltweave.portfolio.organization.domain.entities.Organization;
@@ -18,13 +21,16 @@ import io.voltweave.portfolio.organization.persistence.OrganizationRepository;
 public class OrganizationService {
     private final OrganizationRepository organizationRepository;
     private final OrganizationMemberRepository memberRepository;
+    private final AuditService auditService;
 
     public OrganizationService(
             OrganizationRepository organizationRepository,
-            OrganizationMemberRepository memberRepository
+            OrganizationMemberRepository memberRepository,
+            AuditService auditService
     ) {
         this.organizationRepository = organizationRepository;
         this.memberRepository = memberRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -63,6 +69,10 @@ public class OrganizationService {
         findForSubject(organizationId, actingSubjectId);
         var member = OrganizationMember.active(organizationId, subjectId, role, Instant.now());
         memberRepository.insert(member);
+        auditService.recordUserAction(
+                organizationId, actingSubjectId, AuditAction.ORGANIZATION_MEMBER_ADDED,
+                AuditResourceType.ORGANIZATION_MEMBER, member.id()
+        );
         return member;
     }
 }

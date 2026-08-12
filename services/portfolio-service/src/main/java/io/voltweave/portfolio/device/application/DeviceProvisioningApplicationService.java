@@ -11,6 +11,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.voltweave.portfolio.audit.application.AuditService;
+import io.voltweave.portfolio.audit.domain.enums.AuditAction;
+import io.voltweave.portfolio.audit.domain.enums.AuditResourceType;
 import io.voltweave.portfolio.device.application.model.DeviceProfile;
 import io.voltweave.portfolio.device.application.exception.DeviceNotFoundException;
 import io.voltweave.portfolio.device.application.exception.DeviceProvisioningConflictException;
@@ -29,15 +32,18 @@ public class DeviceProvisioningApplicationService {
     private final DeviceRepository deviceRepository;
     private final DeviceProvisioningRepository provisioningRepository;
     private final ApiIdempotencyRepository idempotencyRepository;
+    private final AuditService auditService;
 
     public DeviceProvisioningApplicationService(
             DeviceRepository deviceRepository,
             DeviceProvisioningRepository provisioningRepository,
-            ApiIdempotencyRepository idempotencyRepository
+            ApiIdempotencyRepository idempotencyRepository,
+            AuditService auditService
     ) {
         this.deviceRepository = deviceRepository;
         this.provisioningRepository = provisioningRepository;
         this.idempotencyRepository = idempotencyRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -76,6 +82,10 @@ public class DeviceProvisioningApplicationService {
         }
         deviceRepository.update(device.beginProvisioning(now));
         provisioningRepository.insert(request);
+        auditService.recordUserAction(
+                device.organizationId(), subjectId, AuditAction.DEVICE_PROVISION_REQUESTED,
+                AuditResourceType.DEVICE, device.id()
+        );
         return request;
     }
 

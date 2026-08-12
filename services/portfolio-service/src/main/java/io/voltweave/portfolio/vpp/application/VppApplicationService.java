@@ -6,6 +6,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.voltweave.portfolio.audit.application.AuditService;
+import io.voltweave.portfolio.audit.domain.enums.AuditAction;
+import io.voltweave.portfolio.audit.domain.enums.AuditResourceType;
 import io.voltweave.portfolio.organization.application.OrganizationService;
 import io.voltweave.portfolio.organization.domain.enums.OrganizationStatus;
 import io.voltweave.portfolio.organization.domain.enums.OrganizationType;
@@ -36,6 +39,7 @@ public class VppApplicationService {
     private final VppMembershipRepository membershipRepository;
     private final AutomationPolicyRepository policyRepository;
     private final VppCapacityRepository capacityRepository;
+    private final AuditService auditService;
 
     public VppApplicationService(
             OrganizationService organizationService,
@@ -43,7 +47,8 @@ public class VppApplicationService {
             VirtualPowerPlantRepository vppRepository,
             VppMembershipRepository membershipRepository,
             AutomationPolicyRepository policyRepository,
-            VppCapacityRepository capacityRepository
+            VppCapacityRepository capacityRepository,
+            AuditService auditService
     ) {
         this.organizationService = organizationService;
         this.siteRepository = siteRepository;
@@ -51,6 +56,7 @@ public class VppApplicationService {
         this.membershipRepository = membershipRepository;
         this.policyRepository = policyRepository;
         this.capacityRepository = capacityRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -98,6 +104,10 @@ public class VppApplicationService {
                     vpp, site.organizationId(), site.id(), now
             ));
         }
+        auditService.recordUserAction(
+                vpp.organizationId(), subjectId, AuditAction.VPP_SITE_ADDED,
+                AuditResourceType.VPP, vpp.id()
+        );
         return profile(vpp);
     }
 
@@ -108,6 +118,10 @@ public class VppApplicationService {
                 .filter(current -> current.status() == VppMembershipStatus.ACTIVE)
                 .orElseThrow(() -> new VppMembershipNotFoundException(siteId));
         membershipRepository.update(membership.remove(Instant.now()));
+        auditService.recordUserAction(
+                vpp.organizationId(), subjectId, AuditAction.VPP_SITE_REMOVED,
+                AuditResourceType.VPP, vpp.id()
+        );
         return profile(vpp);
     }
 
@@ -134,6 +148,11 @@ public class VppApplicationService {
                 command.effectiveFrom(), Instant.now()
         );
         policyRepository.insert(updated);
+        auditService.recordUserAction(
+                vpp.organizationId(), subjectId,
+                AuditAction.VPP_AUTOMATION_POLICY_UPDATED,
+                AuditResourceType.VPP, vpp.id()
+        );
         return profile(vpp);
     }
 
