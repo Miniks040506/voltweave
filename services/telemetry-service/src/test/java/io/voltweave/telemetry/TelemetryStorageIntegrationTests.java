@@ -1,0 +1,107 @@
+package io.voltweave.telemetry;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.simple.JdbcClient;
+
+@SpringBootTest
+@Import(TimescaleTestConfiguration.class)
+class TelemetryStorageIntegrationTests {
+    @Autowired
+    private JdbcClient jdbcClient;
+
+    @Test
+    void migrationCreatesServiceOwnedTimescaleStorage() {
+        assertThat(value("SELECT current_user")).isEqualTo("telemetry_app");
+        assertThat(value("""
+                SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'
+                """)).isEqualTo("2.29.0");
+        assertThat(value("""
+                SELECT count(*) FROM timescaledb_information.hypertables
+                WHERE hypertable_schema = 'public'
+                  AND hypertable_name = 'telemetry_points'
+                """)).isEqualTo("1");
+        assertThat(value("""
+                SELECT count(*) FROM information_schema.tables
+                WHERE table_schema = 'public'
+                  AND table_name IN (
+                    'telemetry_points', 'telemetry_dedup',
+                    'quarantined_telemetry', 'device_twins'
+                  )
+                """)).isEqualTo("4");
+        assertThat(value("""
+                SELECT count(*) FROM pg_tables
+                WHERE schemaname = 'public'
+                  AND tablename IN (
+                    'telemetry_points', 'telemetry_dedup',
+                    'quarantined_telemetry', 'device_twins'
+                  )
+                  AND tableowner = current_user
+                """)).isEqualTo("4");
+    }
+
+    @Test
+    void ordinaryDedupTableRejectsARepeatedDeviceSequence() {
+        UUID organizationId = UUID.randomUUID();
+        UUID deviceId = UUID.randomUUID();
+        Instant observedAt = Instant.parse("2026-08-12T12:00:00Z");
+        insertDedup(organizationId, deviceId, observedAt);
+
+        assertThatThrownBy(() -> insertDedup(organizationId, deviceId, observedAt))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void telemetryConstraintsRejectInvalidSoc() {
+        assertThatThrownBy(() -> jdbcClient.sql("""
+                INSERT INTO telemetry_points (
+                    organization_id, site_id, device_id, sequence_number,
+                    observed_at, received_at, device_type,
+                    active_power_kw, soc_percent, online
+                ) VALUES (
+                    :organizationId, :siteId, :deviceId, 1,
+                    :observedAt, :receivedAt, 'BATTERY', 2.5, 101, TRUE
+                )
+                """)
+                .param("organizationId", UUID.randomUUID())
+                .param("siteId", UUID.randomUUID())
+                .param("deviceId", UUID.randomUUID())
+                .param("observedAt", timestamp("2026-08-12T12:00:00Z"))
+                .param("receivedAt", timestamp("2026-08-12T12:00:01Z"))
+                .update()).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    private void insertDedup(UUID organizationId, UUID deviceId, Instant observedAt) {
+        jdbcClient.sql("""
+                INSERT INTO telemetry_dedup (
+                    organization_id, device_id, sequence_number,
+                    observed_at, expires_at
+                ) VALUES (
+                    :organizationId, :deviceId, 7, :observedAt, :expiresAt
+                )
+                """)
+                .param("organizationId", organizationId)
+                .param("deviceId", deviceId)
+                .param("observedAt", Timestamp.from(observedAt))
+                .param("expiresAt", Timestamp.from(observedAt.plusSeconds(86_400)))
+                .update();
+    }
+
+    private static Timestamp timestamp(String instant) {
+        return Timestamp.from(Instant.parse(instant));
+    }
+
+    private String value(String sql) {
+        return jdbcClient.sql(sql).query(String.class).single();
+    }
+}
