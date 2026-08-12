@@ -3,6 +3,7 @@ package io.voltweave.telemetry.processing.application;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -58,15 +59,17 @@ public class TelemetryProcessingJobs {
                 if (exception instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
                 }
-                String message = exception.getMessage() == null
-                        ? exception.getClass().getSimpleName() : exception.getMessage();
+                Throwable failure = exception instanceof ExecutionException && exception.getCause() != null
+                        ? exception.getCause() : exception;
+                String message = failure.getMessage() == null
+                        ? failure.getClass().getSimpleName() : failure.getMessage();
                 long delaySeconds = Math.min(60, 1L << Math.min(event.attempts(), 6));
                 repository.markFailed(
                         event.eventId(),
                         clock.instant().plus(delaySeconds, ChronoUnit.SECONDS),
                         message
                 );
-                LOGGER.warn("Failed to publish normalized telemetry {}", event.eventId(), exception);
+                LOGGER.warn("Failed to publish normalized telemetry {}", event.eventId(), failure);
             }
         }
     }
