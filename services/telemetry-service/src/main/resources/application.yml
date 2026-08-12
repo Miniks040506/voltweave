@@ -51,3 +51,5 @@ voltweave:
     stale-after: ${TELEMETRY_STALE_AFTER:5m}
     out-of-order-window: ${TELEMETRY_OUT_OF_ORDER_WINDOW:2m}
     dedup-retention: ${TELEMETRY_DEDUP_RETENTION:7d}
+    dedup-cleanup-delay: ${TELEMETRY_DEDUP_CLEANUP_DELAY:1h}
+    outbox-poll-delay: ${TELEMETRY_OUTBOX_POLL_DELAY:1s}
