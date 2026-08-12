@@ -43,6 +43,10 @@ info:
     description: Owns tenants, sites, devices and virtual power plants
 
 voltweave:
+  mqtt:
+    broker-uri: ${MQTT_BROKER_URI:tcp://localhost:1883}
+    admin-username: ${MQTT_ADMIN_USERNAME:voltweave-provisioner}
+    admin-password: ${MQTT_ADMIN_PASSWORD:local-mqtt-admin-change-me}
   messaging:
     enabled: ${MESSAGING_ENABLED:true}
     outbox:
