@@ -17,7 +17,8 @@ class ApiGatewayApplicationTests {
         assertThat(gatewayProperties.getRoutes())
                 .extracting("id")
                 .containsExactly(
-                        "portfolio-organizations", "portfolio-sites", "portfolio-devices"
+                        "portfolio-organizations", "portfolio-sites", "portfolio-devices",
+                        "portfolio-vpps"
                 );
     }
 }

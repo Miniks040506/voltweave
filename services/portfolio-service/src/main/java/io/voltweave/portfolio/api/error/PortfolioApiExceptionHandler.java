@@ -16,6 +16,10 @@ import io.voltweave.portfolio.device.application.exception.DeviceProvisioningCon
 import io.voltweave.portfolio.device.application.exception.IdempotencyKeyConflictException;
 import io.voltweave.portfolio.organization.application.exception.OrganizationNotFoundException;
 import io.voltweave.portfolio.site.application.exception.SiteNotFoundException;
+import io.voltweave.portfolio.vpp.application.exception.SiteNotVppEligibleException;
+import io.voltweave.portfolio.vpp.application.exception.StaleAutomationPolicyException;
+import io.voltweave.portfolio.vpp.application.exception.VppMembershipNotFoundException;
+import io.voltweave.portfolio.vpp.application.exception.VppNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
@@ -33,6 +37,15 @@ public class PortfolioApiExceptionHandler {
     @ExceptionHandler(DeviceNotFoundException.class)
     ResponseEntity<ProblemDetail> deviceNotFound(HttpServletRequest request) {
         return problem(HttpStatus.NOT_FOUND, "Device not found", request);
+    }
+
+    @ExceptionHandler({
+            VppNotFoundException.class,
+            SiteNotVppEligibleException.class,
+            VppMembershipNotFoundException.class
+    })
+    ResponseEntity<ProblemDetail> vppResourceNotFound(HttpServletRequest request) {
+        return problem(HttpStatus.NOT_FOUND, "VPP resource not found", request);
     }
 
     @ExceptionHandler({
@@ -56,6 +69,11 @@ public class PortfolioApiExceptionHandler {
     })
     ResponseEntity<ProblemDetail> provisioningConflict(HttpServletRequest request) {
         return problem(HttpStatus.CONFLICT, "Provisioning conflict", request);
+    }
+
+    @ExceptionHandler(StaleAutomationPolicyException.class)
+    ResponseEntity<ProblemDetail> stalePolicy(HttpServletRequest request) {
+        return problem(HttpStatus.CONFLICT, "Automation policy is stale", request);
     }
 
     private ResponseEntity<ProblemDetail> problem(
