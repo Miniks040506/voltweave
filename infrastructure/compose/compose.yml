@@ -133,6 +133,22 @@ services:
     mem_limit: 256m
     stop_grace_period: 15s
 
+  mosquitto-init:
+    image: eclipse-mosquitto:2.0.22
+    entrypoint: ["/bin/sh", "/opt/voltweave/init-telemetry-reader.sh"]
+    environment:
+      MQTT_HOST: mosquitto
+      MOSQUITTO_ADMIN_USERNAME: ${MOSQUITTO_ADMIN_USERNAME:?MOSQUITTO_ADMIN_USERNAME is required}
+      MOSQUITTO_ADMIN_PASSWORD: ${MOSQUITTO_ADMIN_PASSWORD:?MOSQUITTO_ADMIN_PASSWORD is required}
+      MQTT_TELEMETRY_USERNAME: ${MQTT_TELEMETRY_USERNAME:?MQTT_TELEMETRY_USERNAME is required}
+      MQTT_TELEMETRY_PASSWORD: ${MQTT_TELEMETRY_PASSWORD:?MQTT_TELEMETRY_PASSWORD is required}
+    volumes:
+      - ./mosquitto/init-telemetry-reader.sh:/opt/voltweave/init-telemetry-reader.sh:ro
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    restart: "no"
+
 volumes:
   postgres_data:
   kafka_data:

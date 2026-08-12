@@ -97,6 +97,30 @@ if ($LASTEXITCODE -ne 0) {
 Assert-Equal "Mosquitto Dynamic Security" `
   (($mqttAdminResult -join "`n") -match "admin") $true
 
+$mqttClientResult = & docker compose --env-file $EnvFile -f $composeFile exec -T `
+  mosquitto mosquitto_ctrl -h localhost -p 1883 `
+  -u (Get-Setting "MOSQUITTO_ADMIN_USERNAME") `
+  -P (Get-Setting "MOSQUITTO_ADMIN_PASSWORD") `
+  dynsec getClient (Get-Setting "MQTT_TELEMETRY_USERNAME")
+if ($LASTEXITCODE -ne 0) {
+  throw "Telemetry MQTT identity was not initialized."
+}
+Assert-Equal "Telemetry MQTT client id" `
+  (($mqttClientResult -join "`n") -match "telemetry-service") $true
+Assert-Equal "Telemetry MQTT role" `
+  (($mqttClientResult -join "`n") -match "telemetry-reader") $true
+
+$mqttRoleResult = & docker compose --env-file $EnvFile -f $composeFile exec -T `
+  mosquitto mosquitto_ctrl -h localhost -p 1883 `
+  -u (Get-Setting "MOSQUITTO_ADMIN_USERNAME") `
+  -P (Get-Setting "MOSQUITTO_ADMIN_PASSWORD") `
+  dynsec getRole telemetry-reader
+if ($LASTEXITCODE -ne 0) {
+  throw "Telemetry MQTT role was not initialized."
+}
+Assert-Equal "Telemetry MQTT topic scope" `
+  (($mqttRoleResult -join "`n") -match "voltweave/\+/\+/\+/telemetry") $true
+
 $expectedOwners = @(
   "dispatch_db:dispatch_app"
   "intelligence_db:intelligence_app"
