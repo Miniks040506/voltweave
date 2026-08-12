@@ -27,6 +27,10 @@ spring:
               uri: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
               predicates:
                 - Path=/api/v1/vpps,/api/v1/vpps/**
+            - id: portfolio-audit
+              uri: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/audit,/api/v1/audit/**
 
 server:
   port: ${PORT:8080}

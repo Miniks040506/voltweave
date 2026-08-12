@@ -1,10 +1,12 @@
 package io.voltweave.portfolio.audit.application;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.voltweave.portfolio.audit.domain.entities.AuditEntry;
 import io.voltweave.portfolio.audit.domain.enums.AuditAction;
@@ -30,6 +32,15 @@ public class AuditService {
                 organizationId, actorSubjectId, action, resourceType, resourceId,
                 correlationId(), Instant.now()
         ));
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuditEntry> findForSubject(
+            UUID organizationId,
+            String subjectId,
+            int limit
+    ) {
+        return repository.findForSubject(organizationId, subjectId, limit);
     }
 
     private static UUID correlationId() {
