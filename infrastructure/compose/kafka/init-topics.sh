@@ -10,6 +10,7 @@ topics=(
   "vw.dispatch.lifecycle.v1:2592000000"
   "vw.settlement.lifecycle.v1:2592000000"
   "vw.audit.v1:7776000000"
+  "vw.audit.v1.dlq:2592000000"
 )
 
 for topic_config in "${topics[@]}"; do

@@ -20,7 +20,18 @@ public class AuditEntryRepository {
     }
 
     public void insert(AuditEntry entry) {
-        int rows = jdbcClient.sql("""
+        int rows = insert(entry, "");
+        if (rows != 1) {
+            throw new IllegalStateException("Expected one inserted audit entry, got " + rows);
+        }
+    }
+
+    public boolean insertIfAbsent(AuditEntry entry) {
+        return insert(entry, " ON CONFLICT (id) DO NOTHING") == 1;
+    }
+
+    private int insert(AuditEntry entry, String conflictClause) {
+        return jdbcClient.sql("""
                 INSERT INTO audit_entries (
                     id, organization_id, actor_type, actor_id, action,
                     resource_type, resource_id, occurred_at, correlation_id
@@ -28,7 +39,7 @@ public class AuditEntryRepository {
                     :id, :organizationId, :actorType, :actorId, :action,
                     :resourceType, :resourceId, :occurredAt, :correlationId
                 )
-                """)
+                """ + conflictClause)
                 .param("id", entry.id())
                 .param("organizationId", entry.organizationId())
                 .param("actorType", entry.actorType().name())
@@ -39,9 +50,6 @@ public class AuditEntryRepository {
                 .param("occurredAt", Timestamp.from(entry.occurredAt()))
                 .param("correlationId", entry.correlationId())
                 .update();
-        if (rows != 1) {
-            throw new IllegalStateException("Expected one inserted audit entry, got " + rows);
-        }
     }
 
     public List<AuditEntry> findForSubject(

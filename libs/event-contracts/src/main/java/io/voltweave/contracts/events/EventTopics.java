@@ -10,6 +10,7 @@ public final class EventTopics {
     public static final String DISPATCH_LIFECYCLE_V1 = "vw.dispatch.lifecycle.v1";
     public static final String SETTLEMENT_LIFECYCLE_V1 = "vw.settlement.lifecycle.v1";
     public static final String AUDIT_V1 = "vw.audit.v1";
+    public static final String AUDIT_DLQ_V1 = "vw.audit.v1.dlq";
 
     public static final List<String> V1_TOPICS = List.of(
             TELEMETRY_RAW_V1,
