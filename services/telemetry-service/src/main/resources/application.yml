@@ -7,6 +7,12 @@ spring:
     password: ${TELEMETRY_DB_PASSWORD:local-telemetry-change-me}
   flyway:
     validate-migration-naming: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
 
 server:
   port: ${PORT:8082}
@@ -25,3 +31,11 @@ info:
   app:
     name: ${spring.application.name}
     description: Owns telemetry ingestion, history and digital twins
+
+voltweave:
+  ingress:
+    enabled: ${TELEMETRY_INGRESS_ENABLED:true}
+    broker-uri: ${MQTT_BROKER_URI:tcp://localhost:1883}
+    username: ${MQTT_TELEMETRY_USERNAME:telemetry-service}
+    password: ${MQTT_TELEMETRY_PASSWORD:local-telemetry-mqtt-change-me}
+    topic: voltweave/+/+/+/telemetry
