@@ -33,7 +33,6 @@ public class PortfolioAccessClientConfiguration {
 
     @Bean
     RestClient portfolioAccessRestClient(
-            RestClient.Builder builder,
             OAuth2AuthorizedClientManager authorizedClientManager,
             @Value("${voltweave.portfolio.base-url}") String baseUrl
     ) {
@@ -42,6 +41,6 @@ public class PortfolioAccessClientConfiguration {
         oauth.setPrincipalResolver(request -> new UsernamePasswordAuthenticationToken(
                 "telemetry-service", "N/A", List.of()
         ));
-        return builder.baseUrl(baseUrl).requestInterceptor(oauth).build();
+        return RestClient.builder().baseUrl(baseUrl).requestInterceptor(oauth).build();
     }
 }
