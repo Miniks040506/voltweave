@@ -1,0 +1,32 @@
+package io.voltweave.intelligence.security;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration(proxyBeanMethods = false)
+public class IntelligenceSecurityConfiguration {
+    @Bean
+    SecurityFilterChain intelligenceSecurityFilterChain(
+            HttpSecurity http,
+            IntelligenceSecurityProblemWriter problems
+    ) throws Exception {
+        return http
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(
+                        SessionCreationPolicy.STATELESS
+                ))
+                .authorizeHttpRequests(requests -> requests
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .anyRequest().authenticated())
+                .exceptionHandling(errors -> errors
+                        .authenticationEntryPoint((request, response, exception) ->
+                                problems.unauthorized(request, response))
+                        .accessDeniedHandler((request, response, exception) ->
+                                problems.forbidden(request, response)))
+                .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> {}))
+                .build();
+    }
+}
