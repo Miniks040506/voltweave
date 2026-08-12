@@ -37,6 +37,7 @@
     </dependencyManagement>
 
     <modules>
+        <module>libs/event-contracts</module>
         <module>services/api-gateway</module>
         <module>services/intelligence-service</module>
         <module>services/portfolio-service</module>
