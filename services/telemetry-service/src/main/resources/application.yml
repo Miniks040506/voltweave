@@ -20,6 +20,21 @@ spring:
         isolation.level: read_committed
     listener:
       ack-mode: record
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/voltweave}
+      client:
+        registration:
+          voltweave-internal:
+            provider: keycloak
+            client-id: voltweave-internal
+            client-secret: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:local-internal-change-me}
+            authorization-grant-type: client_credentials
+        provider:
+          keycloak:
+            token-uri: ${OIDC_TOKEN_URI:http://localhost:8180/realms/voltweave/protocol/openid-connect/token}
 
 server:
   port: ${PORT:8082}
@@ -53,3 +68,5 @@ voltweave:
     dedup-retention: ${TELEMETRY_DEDUP_RETENTION:7d}
     dedup-cleanup-delay: ${TELEMETRY_DEDUP_CLEANUP_DELAY:1h}
     outbox-poll-delay: ${TELEMETRY_OUTBOX_POLL_DELAY:1s}
+  portfolio:
+    base-url: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
