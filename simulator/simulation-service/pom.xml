@@ -45,14 +45,10 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>io.voltweave.simulator.SimulatorApplication</mainClass>
-                        </manifest>
-                    </archive>
+                    <mainClass>io.voltweave.simulator.SimulatorApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>
