@@ -64,6 +64,20 @@ public class DeviceProvisioningRepository {
                 .optional();
     }
 
+    public Optional<DeviceProvisioningRequest> findByDevice(
+            UUID organizationId,
+            UUID deviceId
+    ) {
+        return jdbcClient.sql("""
+                SELECT * FROM device_provisioning_requests
+                WHERE organization_id = :organizationId AND device_id = :deviceId
+                """)
+                .param("organizationId", organizationId)
+                .param("deviceId", deviceId)
+                .query(ROW_MAPPER)
+                .optional();
+    }
+
     public void update(DeviceProvisioningRequest request) {
         int rows = jdbcClient.sql("""
                 UPDATE device_provisioning_requests

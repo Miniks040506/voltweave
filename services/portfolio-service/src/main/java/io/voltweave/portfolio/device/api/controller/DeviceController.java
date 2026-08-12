@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -100,10 +101,25 @@ public class DeviceController {
             @PathVariable UUID deviceId,
             @RequestHeader("Idempotency-Key") String idempotencyKey
     ) {
-        var request = provisioningService.provision(
+        var result = provisioningService.provision(
                 deviceId, idempotencyKey, jwt.getSubject()
         );
-        return ResponseEntity.accepted().body(DeviceProvisioningResponse.from(request));
+        var response = DeviceProvisioningResponse.from(result);
+        return result.containsNewCredential()
+                ? ResponseEntity.created(URI.create(
+                        "/api/v1/devices/" + deviceId + "/provision"
+                )).body(response)
+                : ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/api/v1/devices/{deviceId}/credentials")
+    public DeviceProvisioningResponse revokeCredential(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID deviceId
+    ) {
+        return DeviceProvisioningResponse.from(
+                provisioningService.revoke(deviceId, jwt.getSubject())
+        );
     }
 
     private static BatteryConfigurationCommand battery(BatteryConfigurationRequest request) {

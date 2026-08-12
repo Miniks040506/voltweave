@@ -4,5 +4,6 @@ public enum PortfolioChangeTypeV1 {
     ADDED,
     UPDATED,
     PROVISION_REQUESTED,
-    REMOVED
+    REMOVED,
+    REVOKED
 }

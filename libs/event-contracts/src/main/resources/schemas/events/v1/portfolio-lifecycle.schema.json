@@ -17,7 +17,7 @@
       ]
     },
     "changeType": {
-      "enum": ["ADDED", "UPDATED", "PROVISION_REQUESTED", "REMOVED"]
+      "enum": ["ADDED", "UPDATED", "PROVISION_REQUESTED", "REMOVED", "REVOKED"]
     },
     "relatedResourceId": {
       "type": ["string", "null"],
