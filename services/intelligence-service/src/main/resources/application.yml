@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: intelligence-service
+  datasource:
+    url: ${INTELLIGENCE_DB_URL:jdbc:postgresql://localhost:6543/intelligence_db}
+    username: ${INTELLIGENCE_DB_USERNAME:intelligence_app}
+    password: ${INTELLIGENCE_DB_PASSWORD:local-intelligence-change-me}
+  flyway:
+    validate-migration-naming: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        isolation.level: read_committed
+    listener:
+      ack-mode: record
+
+server:
+  port: ${PORT:8083}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Generates immutable energy forecasts and flexibility snapshots
+
+voltweave:
+  projection:
+    enabled: ${INTELLIGENCE_PROJECTION_ENABLED:true}
+  forecast:
+    training-window: ${FORECAST_TRAINING_WINDOW:7d}
+    freshness: ${FORECAST_FRESHNESS:30m}
