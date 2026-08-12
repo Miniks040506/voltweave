@@ -1,0 +1,86 @@
+{
+  "brokerUri": "tcp://localhost:1883",
+  "telemetryIntervalSeconds": 5,
+  "devices": [
+    {
+      "deviceId": "11111111-1111-1111-1111-111111111111",
+      "type": "SMART_METER",
+      "mqtt": {
+        "username": "replace-meter-username",
+        "password": "replace-from-provision-response",
+        "clientId": "replace-meter-client-id",
+        "telemetryTopic": "replace-meter-telemetry-topic",
+        "statusTopic": "replace-meter-status-topic",
+        "acknowledgementTopic": "replace-meter-ack-topic",
+        "commandTopic": "replace-meter-command-topic"
+      },
+      "ratedPowerKw": 22,
+      "initialSocPercent": 0,
+      "capacityKwh": 0,
+      "minSocPercent": 0,
+      "maxSocPercent": 0,
+      "efficiency": 0,
+      "seed": 101
+    },
+    {
+      "deviceId": "22222222-2222-2222-2222-222222222222",
+      "type": "SOLAR_INVERTER",
+      "mqtt": {
+        "username": "replace-solar-username",
+        "password": "replace-from-provision-response",
+        "clientId": "replace-solar-client-id",
+        "telemetryTopic": "replace-solar-telemetry-topic",
+        "statusTopic": "replace-solar-status-topic",
+        "acknowledgementTopic": "replace-solar-ack-topic",
+        "commandTopic": "replace-solar-command-topic"
+      },
+      "ratedPowerKw": 8,
+      "initialSocPercent": 0,
+      "capacityKwh": 0,
+      "minSocPercent": 0,
+      "maxSocPercent": 0,
+      "efficiency": 0,
+      "seed": 202
+    },
+    {
+      "deviceId": "33333333-3333-3333-3333-333333333333",
+      "type": "BATTERY",
+      "mqtt": {
+        "username": "replace-battery-username",
+        "password": "replace-from-provision-response",
+        "clientId": "replace-battery-client-id",
+        "telemetryTopic": "replace-battery-telemetry-topic",
+        "statusTopic": "replace-battery-status-topic",
+        "acknowledgementTopic": "replace-battery-ack-topic",
+        "commandTopic": "replace-battery-command-topic"
+      },
+      "ratedPowerKw": 5,
+      "initialSocPercent": 70,
+      "capacityKwh": 13.5,
+      "minSocPercent": 20,
+      "maxSocPercent": 90,
+      "efficiency": 0.95,
+      "seed": 303
+    },
+    {
+      "deviceId": "44444444-4444-4444-4444-444444444444",
+      "type": "EV_CHARGER",
+      "mqtt": {
+        "username": "replace-ev-username",
+        "password": "replace-from-provision-response",
+        "clientId": "replace-ev-client-id",
+        "telemetryTopic": "replace-ev-telemetry-topic",
+        "statusTopic": "replace-ev-status-topic",
+        "acknowledgementTopic": "replace-ev-ack-topic",
+        "commandTopic": "replace-ev-command-topic"
+      },
+      "ratedPowerKw": 7.4,
+      "initialSocPercent": 45,
+      "capacityKwh": 75,
+      "minSocPercent": 10,
+      "maxSocPercent": 80,
+      "efficiency": 0.92,
+      "seed": 404
+    }
+  ]
+}

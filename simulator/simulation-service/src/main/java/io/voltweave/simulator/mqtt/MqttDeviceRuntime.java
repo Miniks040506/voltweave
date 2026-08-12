@@ -30,6 +30,7 @@ public final class MqttDeviceRuntime implements AutoCloseable {
     private final Duration interval;
     private final MqttClient client;
     private final ScheduledExecutorService scheduler;
+    private boolean firstSample = true;
 
     public MqttDeviceRuntime(
             String brokerUri,
@@ -89,9 +90,10 @@ public final class MqttDeviceRuntime implements AutoCloseable {
         try {
             publish(
                     scenario.mqtt().telemetryTopic(),
-                    device.sample(clock.instant(), interval),
+                    device.sample(clock.instant(), firstSample ? Duration.ZERO : interval),
                     false
             );
+            firstSample = false;
         } catch (MqttException | JacksonException exception) {
             System.err.printf("Cannot publish telemetry for device %s: %s%n",
                     scenario.deviceId(), exception.getMessage());

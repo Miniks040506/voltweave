@@ -22,5 +22,9 @@ public record SimulatorConfiguration(
         if (devices.stream().map(DeviceScenario::deviceId).distinct().count() != devices.size()) {
             throw new IllegalArgumentException("deviceId must be unique");
         }
+        if (devices.stream().map(device -> device.mqtt().clientId()).distinct().count()
+                != devices.size()) {
+            throw new IllegalArgumentException("MQTT clientId must be unique");
+        }
     }
 }
