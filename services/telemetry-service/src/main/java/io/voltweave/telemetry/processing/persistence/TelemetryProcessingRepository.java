@@ -122,7 +122,10 @@ public class TelemetryProcessingRepository {
                     :organizationId, :siteId, :deviceId, :deviceType,
                     :sequenceNumber, :observedAt, :receivedAt,
                     :activePowerKw, :socPercent, :online, :quality,
-                    greatest(:processedAt, :receivedAt)
+                    greatest(
+                        CAST(:processedAt AS TIMESTAMPTZ),
+                        CAST(:receivedAt AS TIMESTAMPTZ)
+                    )
                 )
                 ON CONFLICT (device_id) DO UPDATE SET
                     organization_id = EXCLUDED.organization_id,
