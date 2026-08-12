@@ -19,7 +19,7 @@ CREATE TABLE automation_policies (
     CONSTRAINT automation_policies_vpp_fk
         FOREIGN KEY (organization_id, vpp_id)
         REFERENCES virtual_power_plants (organization_id, id),
-    CONSTRAINT automation_policies_vpp_key UNIQUE (vpp_id),
+    CONSTRAINT automation_policies_version_key UNIQUE (vpp_id, version),
     CONSTRAINT automation_policies_trigger_check
         CHECK (trigger_type IN ('MANUAL', 'PEAK_LIMIT', 'PRICE_THRESHOLD')),
     CONSTRAINT automation_policies_approval_check

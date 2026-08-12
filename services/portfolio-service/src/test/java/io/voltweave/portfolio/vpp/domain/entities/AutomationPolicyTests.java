@@ -26,6 +26,7 @@ class AutomationPolicyTests {
         );
 
         assertThat(defaults.enabled()).isFalse();
+        assertThat(updated.id()).isNotEqualTo(defaults.id());
         assertThat(updated.version()).isEqualTo(2);
         assertThat(updated.peakImportLimitKw()).isEqualByComparingTo("500");
     }

@@ -76,7 +76,8 @@ public record AutomationPolicy(
             Instant now
     ) {
         return new AutomationPolicy(
-                id, organizationId, vppId, newEnabled, newTriggerType, newApprovalMode,
+                UUID.randomUUID(), organizationId, vppId,
+                newEnabled, newTriggerType, newApprovalMode,
                 newPeakImportLimitKw, newPriceThreshold, newReserveMarginPercent,
                 newMaxDispatchPowerKw, newMaxDispatchDurationMinutes,
                 newUnderDeliveryTolerancePercent, newUnderDeliveryGraceSeconds,
