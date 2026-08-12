@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import io.voltweave.contracts.events.v1.TelemetryNormalizedPayloadV1;
 import io.voltweave.telemetry.processing.application.model.TelemetryCursor;
 
 @Repository
@@ -75,6 +76,83 @@ public class TelemetryProcessingRepository {
                                 resultSet.getTimestamp("observed_at").toInstant()
                         ))
                 .optional();
+    }
+
+    public boolean storeAcceptedPoint(
+            UUID organizationId,
+            TelemetryNormalizedPayloadV1 telemetry
+    ) {
+        return jdbcClient.sql("""
+                INSERT INTO telemetry_points (
+                    organization_id, site_id, device_id, sequence_number,
+                    observed_at, received_at, device_type, active_power_kw,
+                    soc_percent, online, telemetry_quality
+                ) VALUES (
+                    :organizationId, :siteId, :deviceId, :sequenceNumber,
+                    :observedAt, :receivedAt, :deviceType, :activePowerKw,
+                    :socPercent, :online, :quality
+                )
+                ON CONFLICT (device_id, observed_at, sequence_number) DO NOTHING
+                """)
+                .param("organizationId", organizationId)
+                .param("siteId", telemetry.siteId())
+                .param("deviceId", telemetry.deviceId())
+                .param("sequenceNumber", telemetry.sequenceNumber())
+                .param("observedAt", timestamp(telemetry.observedAt()))
+                .param("receivedAt", timestamp(telemetry.receivedAt()))
+                .param("deviceType", telemetry.deviceType())
+                .param("activePowerKw", telemetry.activePowerKw())
+                .param("socPercent", telemetry.socPercent())
+                .param("online", telemetry.online())
+                .param("quality", telemetry.quality().name())
+                .update() == 1;
+    }
+
+    public boolean advanceTwin(
+            UUID organizationId,
+            TelemetryNormalizedPayloadV1 telemetry,
+            Instant processedAt
+    ) {
+        return jdbcClient.sql("""
+                INSERT INTO device_twins (
+                    organization_id, site_id, device_id, device_type,
+                    last_sequence_number, last_observed_at, last_received_at,
+                    active_power_kw, soc_percent, online, telemetry_quality, updated_at
+                ) VALUES (
+                    :organizationId, :siteId, :deviceId, :deviceType,
+                    :sequenceNumber, :observedAt, :receivedAt,
+                    :activePowerKw, :socPercent, :online, :quality,
+                    greatest(:processedAt, :receivedAt)
+                )
+                ON CONFLICT (device_id) DO UPDATE SET
+                    organization_id = EXCLUDED.organization_id,
+                    site_id = EXCLUDED.site_id,
+                    device_type = EXCLUDED.device_type,
+                    last_sequence_number = EXCLUDED.last_sequence_number,
+                    last_observed_at = EXCLUDED.last_observed_at,
+                    last_received_at = EXCLUDED.last_received_at,
+                    active_power_kw = EXCLUDED.active_power_kw,
+                    soc_percent = EXCLUDED.soc_percent,
+                    online = EXCLUDED.online,
+                    telemetry_quality = EXCLUDED.telemetry_quality,
+                    updated_at = EXCLUDED.updated_at
+                WHERE device_twins.organization_id = EXCLUDED.organization_id
+                  AND EXCLUDED.last_sequence_number > device_twins.last_sequence_number
+                  AND EXCLUDED.last_observed_at >= device_twins.last_observed_at
+                """)
+                .param("organizationId", organizationId)
+                .param("siteId", telemetry.siteId())
+                .param("deviceId", telemetry.deviceId())
+                .param("deviceType", telemetry.deviceType())
+                .param("sequenceNumber", telemetry.sequenceNumber())
+                .param("observedAt", timestamp(telemetry.observedAt()))
+                .param("receivedAt", timestamp(telemetry.receivedAt()))
+                .param("activePowerKw", telemetry.activePowerKw())
+                .param("socPercent", telemetry.socPercent())
+                .param("online", telemetry.online())
+                .param("quality", telemetry.quality().name())
+                .param("processedAt", timestamp(processedAt))
+                .update() == 1;
     }
 
     public void quarantine(
