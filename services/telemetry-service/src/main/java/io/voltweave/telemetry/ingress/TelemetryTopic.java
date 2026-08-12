@@ -2,10 +2,10 @@ package io.voltweave.telemetry.ingress;
 
 import java.util.UUID;
 
-record TelemetryTopic(UUID organizationId, UUID siteId, UUID deviceId) {
+public record TelemetryTopic(UUID organizationId, UUID siteId, UUID deviceId) {
     private static final int SEGMENT_COUNT = 5;
 
-    static TelemetryTopic parse(String topic) {
+    public static TelemetryTopic parse(String topic) {
         String[] segments = topic.split("/", -1);
         if (segments.length != SEGMENT_COUNT
                 || !"voltweave".equals(segments[0])
