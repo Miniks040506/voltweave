@@ -2,6 +2,10 @@ package io.voltweave.telemetry.processing.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.verify;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -15,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import io.voltweave.contracts.events.EventTopics;
 import io.voltweave.contracts.events.EventTypes;
@@ -22,6 +27,7 @@ import io.voltweave.contracts.events.v1.EventEnvelopeV1;
 import io.voltweave.contracts.events.v1.TelemetryNormalizedPayloadV1;
 import io.voltweave.contracts.events.v1.TelemetryQualityV1;
 import io.voltweave.telemetry.TimescaleTestConfiguration;
+import io.voltweave.telemetry.realtime.SiteTelemetryBroadcaster;
 import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest(properties = {
@@ -53,11 +59,15 @@ class NormalizedTelemetryConsumerIntegrationTests {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @MockitoSpyBean
+    private SiteTelemetryBroadcaster broadcaster;
+
     @BeforeEach
     void clearAcceptedStorage() {
         jdbcClient.sql("""
                 TRUNCATE telemetry_points, device_twins, event_inbox
                 """).update();
+        clearInvocations(broadcaster);
     }
 
     @Test
@@ -76,6 +86,9 @@ class NormalizedTelemetryConsumerIntegrationTests {
                 .isEqualTo("10");
         assertThat(single("SELECT active_power_kw::text FROM device_twins"))
                 .isEqualTo("12.345");
+        verify(broadcaster).publish(
+                eq(ORGANIZATION_ID), any(TelemetryNormalizedPayloadV1.class)
+        );
     }
 
     @Test

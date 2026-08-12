@@ -13,12 +13,12 @@ class ApiGatewayApplicationTests {
     private GatewayProperties gatewayProperties;
 
     @Test
-    void loadsPortfolioRoutes() {
+    void loadsPublicApiRoutesInSpecificityOrder() {
         assertThat(gatewayProperties.getRoutes())
                 .extracting("id")
                 .containsExactly(
-                        "portfolio-organizations", "portfolio-sites", "portfolio-devices",
-                        "portfolio-vpps", "portfolio-audit"
+                        "telemetry-public", "portfolio-organizations", "portfolio-sites",
+                        "portfolio-devices", "portfolio-vpps", "portfolio-audit"
                 );
     }
 }

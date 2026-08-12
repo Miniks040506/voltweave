@@ -1,5 +1,6 @@
 package io.voltweave.telemetry.query.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -8,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
@@ -24,7 +26,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import io.voltweave.telemetry.TimescaleTestConfiguration;
+import io.voltweave.contracts.events.v1.TelemetryNormalizedPayloadV1;
+import io.voltweave.contracts.events.v1.TelemetryQualityV1;
 import io.voltweave.telemetry.access.PortfolioAccessClient;
+import io.voltweave.telemetry.realtime.SiteTelemetryBroadcaster;
 
 @SpringBootTest(properties = {
         "voltweave.ingress.enabled=false",
@@ -52,6 +57,9 @@ class TelemetryQueryApiIntegrationTests {
 
     @Autowired
     private JdbcClient jdbcClient;
+
+    @Autowired
+    private SiteTelemetryBroadcaster broadcaster;
 
     @MockitoBean
     private PortfolioAccessClient accessClient;
@@ -137,7 +145,7 @@ class TelemetryQueryApiIntegrationTests {
                 .thenReturn(ORGANIZATION_ID);
         insertTwin(ORGANIZATION_ID, SITE_ID, DEVICE_ID, 8);
 
-        mockMvc.perform(get("/api/v1/stream/sites/{siteId}", SITE_ID)
+        var result = mockMvc.perform(get("/api/v1/stream/sites/{siteId}", SITE_ID)
                         .with(jwt().jwt(token -> token.subject("customer-18"))))
                 .andExpect(status().isOk())
                 .andExpect(request().asyncStarted())
@@ -147,7 +155,17 @@ class TelemetryQueryApiIntegrationTests {
                 )))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString(
                         DEVICE_ID.toString()
-                )));
+                )))
+                .andReturn();
+
+        broadcaster.publish(ORGANIZATION_ID, new TelemetryNormalizedPayloadV1(
+                SITE_ID, DEVICE_ID, 9, Instant.parse("2026-08-12T12:00:02Z"),
+                Instant.parse("2026-08-12T12:00:03Z"), "SMART_METER",
+                new BigDecimal("9.125"), null, true, TelemetryQualityV1.VALID
+        ));
+
+        assertThat(result.getResponse().getContentAsString())
+                .contains("event:telemetry", "\"sequenceNumber\":9");
     }
 
     private void insertPoint(
