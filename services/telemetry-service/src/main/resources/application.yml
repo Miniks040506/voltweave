@@ -70,3 +70,5 @@ voltweave:
     outbox-poll-delay: ${TELEMETRY_OUTBOX_POLL_DELAY:1s}
   portfolio:
     base-url: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
+  realtime:
+    stream-timeout: ${TELEMETRY_STREAM_TIMEOUT:55s}

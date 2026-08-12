@@ -11,12 +11,15 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import io.voltweave.contracts.events.EventTopics;
 import io.voltweave.contracts.events.EventTypes;
 import io.voltweave.contracts.events.v1.TelemetryNormalizedPayloadV1;
 import io.voltweave.contracts.events.v1.TelemetryQualityV1;
 import io.voltweave.telemetry.processing.persistence.TelemetryProcessingRepository;
+import io.voltweave.telemetry.realtime.SiteTelemetryBroadcaster;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -38,23 +41,27 @@ public class NormalizedTelemetryConsumer {
 
     private final ObjectMapper objectMapper;
     private final TelemetryProcessingRepository repository;
+    private final SiteTelemetryBroadcaster broadcaster;
     private final Clock clock;
 
     @Autowired
     public NormalizedTelemetryConsumer(
             ObjectMapper objectMapper,
-            TelemetryProcessingRepository repository
+            TelemetryProcessingRepository repository,
+            SiteTelemetryBroadcaster broadcaster
     ) {
-        this(objectMapper, repository, Clock.systemUTC());
+        this(objectMapper, repository, broadcaster, Clock.systemUTC());
     }
 
     NormalizedTelemetryConsumer(
             ObjectMapper objectMapper,
             TelemetryProcessingRepository repository,
+            SiteTelemetryBroadcaster broadcaster,
             Clock clock
     ) {
         this.objectMapper = objectMapper;
         this.repository = repository;
+        this.broadcaster = broadcaster;
         this.clock = clock;
     }
 
@@ -68,9 +75,23 @@ public class NormalizedTelemetryConsumer {
         )) {
             return;
         }
-        if (repository.storeAcceptedPoint(event.organizationId(), event.telemetry())) {
-            repository.advanceTwin(event.organizationId(), event.telemetry(), processedAt);
+        if (repository.storeAcceptedPoint(event.organizationId(), event.telemetry())
+                && repository.advanceTwin(
+                        event.organizationId(), event.telemetry(), processedAt
+                )) {
+            publishAfterCommit(event);
         }
+    }
+
+    private void publishAfterCommit(NormalizedEvent event) {
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        broadcaster.publish(event.organizationId(), event.telemetry());
+                    }
+                }
+        );
     }
 
     private NormalizedEvent parse(ConsumerRecord<String, String> record) {
