@@ -52,18 +52,29 @@ class TelemetryStorageIntegrationTests {
                 WHERE table_schema = 'public'
                   AND table_name IN (
                     'telemetry_points', 'telemetry_dedup',
-                    'quarantined_telemetry', 'device_twins'
+                    'quarantined_telemetry', 'device_twins',
+                    'event_inbox', 'event_outbox'
                   )
-                """)).isEqualTo("4");
+                """)).isEqualTo("6");
         assertThat(value("""
                 SELECT count(*) FROM pg_tables
                 WHERE schemaname = 'public'
                   AND tablename IN (
                     'telemetry_points', 'telemetry_dedup',
-                    'quarantined_telemetry', 'device_twins'
+                    'quarantined_telemetry', 'device_twins',
+                    'event_inbox', 'event_outbox'
                   )
                   AND tableowner = current_user
-                """)).isEqualTo("4");
+                """)).isEqualTo("6");
+    }
+
+    @Test
+    void inboxRejectsTheSameEventForTheSameConsumer() {
+        UUID eventId = UUID.randomUUID();
+        insertInbox(eventId);
+
+        assertThatThrownBy(() -> insertInbox(eventId))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -110,6 +121,16 @@ class TelemetryStorageIntegrationTests {
                 .param("deviceId", deviceId)
                 .param("observedAt", Timestamp.from(observedAt))
                 .param("expiresAt", Timestamp.from(observedAt.plusSeconds(86_400)))
+                .update();
+    }
+
+    private void insertInbox(UUID eventId) {
+        jdbcClient.sql("""
+                INSERT INTO event_inbox (consumer_name, event_id, event_type, received_at)
+                VALUES ('telemetry-raw-v1', :eventId, 'TelemetryRawReceived', :receivedAt)
+                """)
+                .param("eventId", eventId)
+                .param("receivedAt", timestamp("2026-08-12T12:00:00Z"))
                 .update();
     }
 
