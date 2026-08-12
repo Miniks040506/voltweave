@@ -11,6 +11,10 @@ spring:
       server:
         webflux:
           routes:
+            - id: telemetry-public
+              uri: ${TELEMETRY_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/sites/*/telemetry,/api/v1/sites/*/live,/api/v1/devices/*/twin,/api/v1/stream/sites/*
             - id: portfolio-organizations
               uri: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
               predicates:
