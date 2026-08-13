@@ -14,6 +14,7 @@ public record DeviceCommandResponse(
         String commandType,
         BigDecimal targetPowerKw,
         Instant validFrom,
+        Instant acknowledgementDeadlineAt,
         Instant expiresAt,
         String status,
         BigDecimal appliedPowerKw,
@@ -26,7 +27,8 @@ public record DeviceCommandResponse(
         return new DeviceCommandResponse(
                 command.id(), command.dispatchId(), command.siteId(), command.deviceId(),
                 command.commandType(), command.targetPowerKw(), command.validFrom(),
-                command.expiresAt(), command.status().name(), command.appliedPowerKw(),
+                command.acknowledgementDeadlineAt(), command.expiresAt(),
+                command.status().name(), command.appliedPowerKw(),
                 command.rejectionReason(), command.requestedAt(), command.acknowledgedAt(),
                 command.version()
         );

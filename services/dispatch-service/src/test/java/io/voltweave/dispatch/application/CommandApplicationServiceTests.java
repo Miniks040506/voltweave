@@ -38,7 +38,7 @@ class CommandApplicationServiceTests {
     private final CommandApplicationService service = new CommandApplicationService(
             commandRepository, dispatchRepository,
             JsonMapper.builder().findAndAddModules().build(),
-            Clock.fixed(NOW, ZoneOffset.UTC)
+            Clock.fixed(NOW, ZoneOffset.UTC), java.time.Duration.ofSeconds(30)
     );
 
     @Test
@@ -60,6 +60,7 @@ class CommandApplicationServiceTests {
         assertThat(command.getAllValues()).allMatch(value ->
                 value.status() == CommandStatus.REQUESTED
                         && value.validFrom().equals(NOW.plusSeconds(900))
+                        && value.acknowledgementDeadlineAt().equals(NOW.plusSeconds(930))
         );
         assertThat(json.getAllValues()).allMatch(value ->
                 value.contains("\"eventType\":\"CommandRequested\"")
@@ -78,6 +79,7 @@ class CommandApplicationServiceTests {
                 UUID.randomUUID(), ORGANIZATION_ID, DISPATCH_ID,
                 UUID.randomUUID(), UUID.randomUUID(), "SET_POWER",
                 new BigDecimal("-4"), dispatch.scheduledStartAt(), dispatch.scheduledEndAt(),
+                dispatch.scheduledEndAt(),
                 CommandStatus.REQUESTED, null, null, NOW, null, 0
         );
         when(dispatchRepository.findById(DISPATCH_ID)).thenReturn(Optional.of(dispatch));

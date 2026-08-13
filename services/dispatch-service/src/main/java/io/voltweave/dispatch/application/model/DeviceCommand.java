@@ -15,6 +15,7 @@ public record DeviceCommand(
         String commandType,
         BigDecimal targetPowerKw,
         Instant validFrom,
+        Instant acknowledgementDeadlineAt,
         Instant expiresAt,
         CommandStatus status,
         BigDecimal appliedPowerKw,

@@ -58,6 +58,8 @@ voltweave:
   messaging:
     enabled: ${MESSAGING_ENABLED:true}
     outbox-poll-delay: ${OUTBOX_POLL_DELAY:1s}
+  command:
+    acknowledgement-timeout: ${COMMAND_ACKNOWLEDGEMENT_TIMEOUT:30s}
   portfolio:
     base-url: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
   intelligence:

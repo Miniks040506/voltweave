@@ -117,11 +117,11 @@ public class CommandRepository {
                 INSERT INTO device_commands (
                     id, organization_id, dispatch_id, site_id, device_id,
                     command_type, target_power_kw, valid_from, expires_at,
-                    status, requested_at, version
+                    acknowledgement_deadline_at, status, requested_at, version
                 ) VALUES (
                     :id, :organizationId, :dispatchId, :siteId, :deviceId,
                     :commandType, :targetPowerKw, :validFrom, :expiresAt,
-                    :status, :requestedAt, :version
+                    :acknowledgementDeadlineAt, :status, :requestedAt, :version
                 )
                 """)
                 .param("id", command.id())
@@ -133,6 +133,7 @@ public class CommandRepository {
                 .param("targetPowerKw", command.targetPowerKw())
                 .param("validFrom", timestamp(command.validFrom()))
                 .param("expiresAt", timestamp(command.expiresAt()))
+                .param("acknowledgementDeadlineAt", timestamp(command.acknowledgementDeadlineAt()))
                 .param("status", command.status().name())
                 .param("requestedAt", timestamp(command.requestedAt()))
                 .param("version", command.version())
@@ -187,6 +188,7 @@ public class CommandRepository {
                 row.getObject("dispatch_id", UUID.class), row.getObject("site_id", UUID.class),
                 row.getObject("device_id", UUID.class), row.getString("command_type"),
                 row.getBigDecimal("target_power_kw"), row.getTimestamp("valid_from").toInstant(),
+                row.getTimestamp("acknowledgement_deadline_at").toInstant(),
                 row.getTimestamp("expires_at").toInstant(),
                 CommandStatus.valueOf(row.getString("status")),
                 row.getBigDecimal("applied_power_kw"), row.getString("rejection_reason"),
