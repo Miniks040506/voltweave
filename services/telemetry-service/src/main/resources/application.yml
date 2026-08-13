@@ -68,6 +68,8 @@ voltweave:
     dedup-retention: ${TELEMETRY_DEDUP_RETENTION:7d}
     dedup-cleanup-delay: ${TELEMETRY_DEDUP_CLEANUP_DELAY:1h}
     outbox-poll-delay: ${TELEMETRY_OUTBOX_POLL_DELAY:1s}
+  command:
+    enabled: ${TELEMETRY_COMMAND_ENABLED:true}
   portfolio:
     base-url: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
   realtime:
