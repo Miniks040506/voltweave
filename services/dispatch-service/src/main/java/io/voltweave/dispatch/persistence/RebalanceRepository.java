@@ -86,6 +86,28 @@ public class RebalanceRepository {
                 .query(UUID.class).list().stream().collect(Collectors.toUnmodifiableSet());
     }
 
+    public Set<UUID> unavailableDeviceIds(
+            UUID dispatchId,
+            Instant reservedFrom,
+            Instant reservedUntil
+    ) {
+        return jdbcClient.sql("""
+                SELECT device_id FROM dispatch_allocations WHERE dispatch_id = :dispatchId
+                UNION
+                SELECT device_id FROM dispatch_replacement_allocations
+                WHERE dispatch_id = :dispatchId
+                UNION
+                SELECT device_id FROM device_reservations
+                WHERE dispatch_id <> :dispatchId
+                  AND tstzrange(reserved_from, reserved_until, '[)')
+                      && tstzrange(:reservedFrom, :reservedUntil, '[)')
+                """)
+                .param("dispatchId", dispatchId)
+                .param("reservedFrom", timestamp(reservedFrom))
+                .param("reservedUntil", timestamp(reservedUntil))
+                .query(UUID.class).list().stream().collect(Collectors.toUnmodifiableSet());
+    }
+
     public void markUnderDelivery(UUID dispatchId, Instant since) {
         jdbcClient.sql("""
                 UPDATE dispatches SET under_delivery_since = :since

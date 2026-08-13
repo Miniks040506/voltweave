@@ -41,9 +41,18 @@ public class PerformanceRepository {
             Instant observedAt
     ) {
         return jdbcClient.sql("""
+                WITH allocations AS (
+                    SELECT organization_id, dispatch_id, site_id, device_id, device_type,
+                           source_available_power_kw, allocated_power_kw
+                    FROM dispatch_allocations
+                    UNION ALL
+                    SELECT organization_id, dispatch_id, site_id, device_id, device_type,
+                           source_available_power_kw, allocated_power_kw
+                    FROM dispatch_replacement_allocations
+                )
                 SELECT a.dispatch_id, a.device_type, a.source_available_power_kw,
                        a.allocated_power_kw, c.target_power_kw
-                FROM dispatch_allocations a
+                FROM allocations a
                 JOIN dispatches d ON d.id = a.dispatch_id
                     AND d.organization_id = a.organization_id
                 JOIN device_commands c ON c.dispatch_id = a.dispatch_id

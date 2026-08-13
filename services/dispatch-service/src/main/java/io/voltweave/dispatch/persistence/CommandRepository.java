@@ -129,7 +129,7 @@ public class CommandRepository {
         jdbcClient.sql("""
                 UPDATE dispatches SET status = 'ACTIVE', version = version + 1
                 WHERE organization_id = :organizationId AND id = :dispatchId
-                  AND status = 'PREPARING'
+                  AND status IN ('PREPARING', 'REBALANCING')
                   AND EXISTS (
                     SELECT 1 FROM device_commands WHERE dispatch_id = :dispatchId
                   )
@@ -148,7 +148,7 @@ public class CommandRepository {
                 SELECT c.organization_id, c.dispatch_id, c.id
                 FROM device_commands c
                 JOIN dispatches d ON d.id = c.dispatch_id
-                WHERE d.status = 'PREPARING'
+                WHERE d.status IN ('PREPARING', 'REBALANCING')
                   AND (
                     c.status = 'REJECTED'
                     OR (c.status = 'REQUESTED' AND c.acknowledgement_deadline_at <= :now)
@@ -182,7 +182,7 @@ public class CommandRepository {
         jdbcClient.sql("""
                 UPDATE dispatches SET status = 'FAILED', version = version + 1
                 WHERE organization_id = :organizationId AND id = :dispatchId
-                  AND status = 'PREPARING'
+                  AND status IN ('PREPARING', 'REBALANCING')
                   AND EXISTS (
                     SELECT 1 FROM device_commands
                     WHERE dispatch_id = :dispatchId
