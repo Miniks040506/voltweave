@@ -19,6 +19,7 @@ import io.voltweave.contracts.events.EventTypes;
 import io.voltweave.contracts.events.command.v1.CommandRequestedPayloadV1;
 import io.voltweave.contracts.events.v1.EventEnvelopeV1;
 import io.voltweave.telemetry.TimescaleTestConfiguration;
+import io.voltweave.telemetry.command.persistence.CommandGatewayRepository;
 import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest(properties = {
@@ -44,6 +45,9 @@ class CommandRequestedConsumerIntegrationTests {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private CommandGatewayRepository repository;
 
     @BeforeEach
     void clearState() {
@@ -99,6 +103,28 @@ class CommandRequestedConsumerIntegrationTests {
 
         assertThat(count("event_inbox")).isZero();
         assertThat(count("command_deliveries")).isZero();
+    }
+
+    @Test
+    void publishedCommandIsSelectedAgainAfterAProcessRestart() throws Exception {
+        consumer.consume(record(UUID.randomUUID()));
+        Instant restartAt = VALID_FROM.plusSeconds(10);
+        jdbcClient.sql("""
+                UPDATE command_deliveries
+                SET status = 'PUBLISHED', published_at = :publishedAt,
+                    next_attempt_at = :nextAttemptAt
+                """)
+                .param("publishedAt", java.sql.Timestamp.from(restartAt.minusSeconds(5)))
+                .param("nextAttemptAt", java.sql.Timestamp.from(restartAt.minusSeconds(1)))
+                .update();
+
+        var recovered = repository.lockReady(restartAt, 10);
+        assertThat(recovered).extracting(delivery -> delivery.commandId())
+                .containsExactly(commandId());
+
+        repository.markFailed(commandId(), restartAt.plusSeconds(2), "broker offline");
+        assertThat(jdbcClient.sql("SELECT attempts FROM command_deliveries")
+                .query(Integer.class).single()).isEqualTo(1);
     }
 
     private ConsumerRecord<String, String> record(UUID eventId) throws Exception {

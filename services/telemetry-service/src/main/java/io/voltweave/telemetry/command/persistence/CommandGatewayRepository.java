@@ -120,7 +120,7 @@ public class CommandGatewayRepository {
                 UPDATE command_deliveries
                 SET attempts = attempts + 1, next_attempt_at = :nextAttemptAt,
                     last_error = :error
-                WHERE command_id = :commandId AND status = 'PENDING'
+                WHERE command_id = :commandId AND status IN ('PENDING', 'PUBLISHED')
                 """)
                 .param("commandId", commandId)
                 .param("nextAttemptAt", timestamp(nextAttemptAt))
