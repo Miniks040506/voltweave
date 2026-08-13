@@ -1,6 +1,5 @@
 package io.voltweave.intelligence.optimization.api.controller;
 
-import java.net.URI;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -45,8 +44,6 @@ public class OptimizationPreviewController {
                 organizationId, vppId,
                 request.targetPowerKw(), request.reserveMarginPercent()
         );
-        return ResponseEntity.created(URI.create(
-                "/api/v1/vpps/" + vppId + "/optimization-preview/" + preview.id()
-        )).body(OptimizationPreviewResponse.from(preview));
+        return ResponseEntity.ok(OptimizationPreviewResponse.from(preview));
     }
 }

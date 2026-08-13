@@ -3,7 +3,6 @@ package io.voltweave.intelligence.optimization.api;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -92,9 +91,7 @@ class OptimizationPreviewApiIntegrationTests {
 
     @Test
     void createsVersionedImmutablePreviewFromLatestSnapshot() throws Exception {
-        generate().andExpect(status().isCreated())
-                .andExpect(header().string("Location",
-                        org.hamcrest.Matchers.containsString("/optimization-preview/")))
+        generate().andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.flexibilitySnapshotId").value(SNAPSHOT_ID.toString()))
                 .andExpect(jsonPath("$.requiredPowerKw").value(5.5))
@@ -102,7 +99,7 @@ class OptimizationPreviewApiIntegrationTests {
                 .andExpect(jsonPath("$.feasible").value(true))
                 .andExpect(jsonPath("$.weightVersion").value("V1"))
                 .andExpect(jsonPath("$.candidates[0].allocatedPowerKw").value(4.0));
-        generate().andExpect(status().isCreated())
+        generate().andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").value(2));
 
         org.junit.jupiter.api.Assertions.assertThrows(
