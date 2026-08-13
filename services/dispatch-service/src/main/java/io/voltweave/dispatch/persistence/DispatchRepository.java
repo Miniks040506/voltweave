@@ -25,7 +25,7 @@ public class DispatchRepository {
     public void lockIdempotency(UUID organizationId, String key) {
         jdbcClient.sql("SELECT pg_advisory_xact_lock(hashtextextended(:scope, 0))")
                 .param("scope", organizationId + ":" + CREATE_OPERATION + ":" + key)
-                .query(Long.class).single();
+                .query((row, rowNumber) -> 0).single();
     }
 
     public Optional<IdempotencyRecord> findIdempotency(UUID organizationId, String key) {
