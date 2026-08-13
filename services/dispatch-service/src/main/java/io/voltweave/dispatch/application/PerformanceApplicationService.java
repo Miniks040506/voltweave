@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.voltweave.contracts.events.v1.TelemetryNormalizedPayloadV1;
+import io.voltweave.dispatch.application.model.Dispatch;
 import io.voltweave.dispatch.application.model.DispatchPerformance;
 import io.voltweave.dispatch.persistence.PerformanceRepository;
 import io.voltweave.dispatch.persistence.PerformanceRepository.PerformancePoint;
@@ -87,6 +89,17 @@ public class PerformanceApplicationService {
         ));
     }
 
+    public DispatchPerformance get(Dispatch dispatch) {
+        return find(dispatch.organizationId(), dispatch.id()).orElseGet(() -> {
+            BigDecimal requested = sum(dispatch.allocations().stream()
+                    .map(Dispatch.Allocation::allocatedPowerKw).toList());
+            return new DispatchPerformance(
+                    dispatch.id(), requested, BigDecimal.ZERO.setScale(3), requested,
+                    BigDecimal.ZERO.setScale(3), BigDecimal.ZERO.setScale(6), List.of()
+            );
+        });
+    }
+
     private static BigDecimal deliveredPower(
             String deviceType,
             BigDecimal sourceAvailablePowerKw,
@@ -130,4 +143,3 @@ public class PerformanceApplicationService {
         return values.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
-

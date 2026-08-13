@@ -160,6 +160,34 @@ class DispatchApiIntegrationTests {
                 .query(Integer.class).single()).isEqualTo(1);
     }
 
+    @Test
+    void readsEmptyPerformanceWithRequestedAllocationAndEnforcesTenant() throws Exception {
+        Instant startAt = nextQuarterHour();
+        allow("operator", ORGANIZATION_ID);
+        when(intelligenceClient.input(
+                ORGANIZATION_ID, VPP_ID, PREVIEW_ID, startAt, startAt.plusSeconds(1800)
+        )).thenReturn(dispatchInput(startAt));
+        String dispatchId = JsonPath.read(
+                create("operator", "performance", startAt, 30, 201), "$.id"
+        );
+
+        mockMvc.perform(get("/api/v1/dispatches/{id}/performance", dispatchId)
+                        .with(operator("operator")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dispatchId").value(dispatchId))
+                .andExpect(jsonPath("$.requestedPowerKw").value(11.0))
+                .andExpect(jsonPath("$.deliveredPowerKw").value(0.0))
+                .andExpect(jsonPath("$.errorKw").value(11.0))
+                .andExpect(jsonPath("$.achievementPercent").value(0.0))
+                .andExpect(jsonPath("$.deliveredEnergyKwh").value(0.0))
+                .andExpect(jsonPath("$.points").isEmpty());
+
+        allow("other", UUID.randomUUID());
+        mockMvc.perform(get("/api/v1/dispatches/{id}/performance", dispatchId)
+                        .with(operator("other")))
+                .andExpect(status().isForbidden());
+    }
+
     private String create(
             String subject, String key, Instant startAt, int durationMinutes, int statusCode
     ) throws Exception {

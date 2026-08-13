@@ -22,8 +22,10 @@ import io.voltweave.dispatch.access.PortfolioAccessClient;
 import io.voltweave.dispatch.api.request.CreateDispatchRequest;
 import io.voltweave.dispatch.api.response.DispatchResponse;
 import io.voltweave.dispatch.api.response.DeviceCommandResponse;
+import io.voltweave.dispatch.api.response.DispatchPerformanceResponse;
 import io.voltweave.dispatch.application.CommandApplicationService;
 import io.voltweave.dispatch.application.DispatchApplicationService;
+import io.voltweave.dispatch.application.PerformanceApplicationService;
 import io.voltweave.dispatch.application.model.Dispatch;
 import io.voltweave.dispatch.application.model.CreateDispatchCommand;
 import jakarta.validation.Valid;
@@ -37,15 +39,33 @@ public class DispatchController {
     private final PortfolioAccessClient accessClient;
     private final DispatchApplicationService dispatchService;
     private final CommandApplicationService commandService;
+    private final PerformanceApplicationService performanceService;
 
     public DispatchController(
             PortfolioAccessClient accessClient,
             DispatchApplicationService dispatchService,
-            CommandApplicationService commandService
+            CommandApplicationService commandService,
+            PerformanceApplicationService performanceService
     ) {
         this.accessClient = accessClient;
         this.dispatchService = dispatchService;
         this.commandService = commandService;
+        this.performanceService = performanceService;
+    }
+
+    @GetMapping("/{dispatchId}/performance")
+    public ResponseEntity<DispatchPerformanceResponse> performance(
+            @PathVariable UUID dispatchId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Dispatch dispatch = dispatchService.find(dispatchId).orElse(null);
+        if (dispatch == null) {
+            return ResponseEntity.notFound().build();
+        }
+        requireAccess(jwt, dispatch);
+        return ResponseEntity.ok(DispatchPerformanceResponse.from(
+                performanceService.get(dispatch)
+        ));
     }
 
     @PostMapping

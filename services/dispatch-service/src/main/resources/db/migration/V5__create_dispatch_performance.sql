@@ -11,7 +11,7 @@ CREATE TABLE dispatch_performance_points (
     actual_power_kw NUMERIC(14, 3) NOT NULL,
     delivered_power_kw NUMERIC(14, 3) NOT NULL,
     error_kw NUMERIC(14, 3) NOT NULL,
-    error_percent NUMERIC(8, 3) NOT NULL,
+    error_percent NUMERIC(18, 3) NOT NULL,
     cumulative_delivered_energy_kwh NUMERIC(18, 6) NOT NULL,
     online BOOLEAN NOT NULL,
     quality VARCHAR(32) NOT NULL,
@@ -34,4 +34,3 @@ CREATE TABLE dispatch_performance_points (
 
 CREATE INDEX dispatch_performance_timeline_idx
     ON dispatch_performance_points (organization_id, dispatch_id, observed_at, device_id);
-
