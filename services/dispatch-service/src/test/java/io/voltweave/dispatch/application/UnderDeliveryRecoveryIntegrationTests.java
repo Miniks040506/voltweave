@@ -38,7 +38,8 @@ import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest(properties = {
         "spring.kafka.listener.auto-startup=false",
-        "voltweave.performance.recovery-poll-delay=1h"
+        "voltweave.performance.recovery-poll-delay=1h",
+        "voltweave.performance.stale-after=1m"
 })
 @Import(PostgresTestConfiguration.class)
 @Transactional

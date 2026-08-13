@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import io.voltweave.dispatch.access.IntelligenceDispatchClient;
 import io.voltweave.dispatch.access.PortfolioAccessClient;
@@ -20,17 +21,23 @@ public class RebalanceApplicationService {
     private final PortfolioAccessClient portfolioClient;
     private final IntelligenceDispatchClient intelligenceClient;
     private final CommandApplicationService commandService;
+    private final Duration telemetryFreshness;
 
     public RebalanceApplicationService(
             RebalanceRepository repository,
             PortfolioAccessClient portfolioClient,
             IntelligenceDispatchClient intelligenceClient,
-            CommandApplicationService commandService
+            CommandApplicationService commandService,
+            @Value("${voltweave.performance.stale-after:15s}") Duration telemetryFreshness
     ) {
         this.repository = repository;
         this.portfolioClient = portfolioClient;
         this.intelligenceClient = intelligenceClient;
         this.commandService = commandService;
+        if (telemetryFreshness.isZero() || telemetryFreshness.isNegative()) {
+            throw new IllegalArgumentException("performance stale-after must be positive");
+        }
+        this.telemetryFreshness = telemetryFreshness;
     }
 
     @Transactional
@@ -39,7 +46,9 @@ public class RebalanceApplicationService {
         if (dispatch == null || !dispatch.scheduledEndAt().isAfter(now)) {
             return;
         }
-        BigDecimal delivered = repository.currentDeliveredPower(dispatchId);
+        BigDecimal delivered = repository.currentDeliveredPower(
+                dispatchId, now.minus(telemetryFreshness)
+        );
         BigDecimal missing = dispatch.targetPowerKw().subtract(delivered)
                 .max(BigDecimal.ZERO).setScale(3, RoundingMode.HALF_UP);
         var policy = portfolioClient.recoveryPolicy(
@@ -65,6 +74,9 @@ public class RebalanceApplicationService {
         }
 
         Duration remaining = Duration.between(now, dispatch.scheduledEndAt());
+        if (remaining.toSeconds() < 1) {
+            return;
+        }
         var excluded = repository.unavailableDeviceIds(
                 dispatchId, now, dispatch.scheduledEndAt()
         );
@@ -79,7 +91,10 @@ public class RebalanceApplicationService {
                         candidate.availablePowerKw(), candidate.allocatedPowerKw(),
                         expectedEnergy(candidate.allocatedPowerKw(), remaining), candidate.score()
                 )).toList();
-        if (!plan.feasible() || allocations.isEmpty()) {
+        BigDecimal replacementPower = allocations.stream()
+                .map(ReplacementAllocation::allocatedPowerKw)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (!plan.feasible() || replacementPower.compareTo(missing) < 0) {
             repository.insertRebalance(
                     dispatch, plan.id(), missing, plan.plannedPowerKw(), "FAILED", now
             );
@@ -103,4 +118,3 @@ public class RebalanceApplicationService {
                 .divide(BigDecimal.valueOf(3_600_000), 3, RoundingMode.HALF_UP);
     }
 }
-

@@ -55,7 +55,7 @@ public class RebalanceRepository {
                 )).optional();
     }
 
-    public BigDecimal currentDeliveredPower(UUID dispatchId) {
+    public BigDecimal currentDeliveredPower(UUID dispatchId, Instant observedAfter) {
         return jdbcClient.sql("""
                 WITH devices AS (
                     SELECT device_id FROM dispatch_allocations WHERE dispatch_id = :dispatchId
@@ -68,22 +68,13 @@ public class RebalanceRepository {
                 LEFT JOIN LATERAL (
                     SELECT delivered_power_kw FROM dispatch_performance_points p
                     WHERE p.dispatch_id = :dispatchId AND p.device_id = d.device_id
+                      AND p.observed_at >= :observedAfter
                     ORDER BY observed_at DESC LIMIT 1
                 ) latest ON true
                 """)
                 .param("dispatchId", dispatchId)
+                .param("observedAfter", timestamp(observedAfter))
                 .query(BigDecimal.class).single();
-    }
-
-    public Set<UUID> assignedDeviceIds(UUID dispatchId) {
-        return jdbcClient.sql("""
-                SELECT device_id FROM dispatch_allocations WHERE dispatch_id = :dispatchId
-                UNION
-                SELECT device_id FROM dispatch_replacement_allocations
-                WHERE dispatch_id = :dispatchId
-                """)
-                .param("dispatchId", dispatchId)
-                .query(UUID.class).list().stream().collect(Collectors.toUnmodifiableSet());
     }
 
     public Set<UUID> unavailableDeviceIds(
