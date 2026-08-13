@@ -56,5 +56,7 @@ voltweave:
   forecast:
     training-window: ${FORECAST_TRAINING_WINDOW:7d}
     freshness: ${FORECAST_FRESHNESS:30m}
+  flexibility:
+    freshness: ${FLEXIBILITY_TELEMETRY_FRESHNESS:5m}
   portfolio:
     base-url: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
