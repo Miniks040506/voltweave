@@ -27,11 +27,13 @@ public record DispatchResponse(
 
     public record AllocationResponse(
             UUID siteId, UUID deviceId, String deviceType,
-            BigDecimal allocatedPowerKw, BigDecimal expectedEnergyKwh, BigDecimal score
+            BigDecimal sourceAvailablePowerKw, BigDecimal allocatedPowerKw,
+            BigDecimal expectedEnergyKwh, BigDecimal score
     ) {
         static AllocationResponse from(Dispatch.Allocation value) {
             return new AllocationResponse(
-                    value.siteId(), value.deviceId(), value.deviceType(), value.allocatedPowerKw(),
+                    value.siteId(), value.deviceId(), value.deviceType(),
+                    value.sourceAvailablePowerKw(), value.allocatedPowerKw(),
                     value.expectedEnergyKwh(), value.score()
             );
         }

@@ -30,6 +30,7 @@ public record Dispatch(
             UUID siteId,
             UUID deviceId,
             String deviceType,
+            BigDecimal sourceAvailablePowerKw,
             BigDecimal allocatedPowerKw,
             BigDecimal expectedEnergyKwh,
             BigDecimal score

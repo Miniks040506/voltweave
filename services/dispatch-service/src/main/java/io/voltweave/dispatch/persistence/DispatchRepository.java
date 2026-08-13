@@ -77,10 +77,11 @@ public class DispatchRepository {
             jdbcClient.sql("""
                     INSERT INTO dispatch_allocations (
                         organization_id, dispatch_id, site_id, device_id, device_type,
-                        allocated_power_kw, expected_energy_kwh, score
+                        source_available_power_kw, allocated_power_kw,
+                        expected_energy_kwh, score
                     ) VALUES (
                         :organizationId, :dispatchId, :siteId, :deviceId, :deviceType,
-                        :powerKw, :energyKwh, :score
+                        :sourcePowerKw, :powerKw, :energyKwh, :score
                     )
                     """)
                     .param("organizationId", dispatch.organizationId())
@@ -88,6 +89,7 @@ public class DispatchRepository {
                     .param("siteId", allocation.siteId())
                     .param("deviceId", allocation.deviceId())
                     .param("deviceType", allocation.deviceType())
+                    .param("sourcePowerKw", allocation.sourceAvailablePowerKw())
                     .param("powerKw", allocation.allocatedPowerKw())
                     .param("energyKwh", allocation.expectedEnergyKwh())
                     .param("score", allocation.score())
@@ -185,8 +187,8 @@ public class DispatchRepository {
 
     private Dispatch loadDetails(DispatchHeader header) {
         List<Dispatch.Allocation> allocations = jdbcClient.sql("""
-                SELECT site_id, device_id, device_type, allocated_power_kw,
-                       expected_energy_kwh, score
+                SELECT site_id, device_id, device_type, source_available_power_kw,
+                       allocated_power_kw, expected_energy_kwh, score
                 FROM dispatch_allocations
                 WHERE organization_id = :organizationId AND dispatch_id = :dispatchId
                 ORDER BY allocated_power_kw DESC, score DESC, device_id
@@ -195,7 +197,9 @@ public class DispatchRepository {
                 .param("dispatchId", header.id())
                 .query((row, rowNumber) -> new Dispatch.Allocation(
                         row.getObject("site_id", UUID.class), row.getObject("device_id", UUID.class),
-                        row.getString("device_type"), row.getBigDecimal("allocated_power_kw"),
+                        row.getString("device_type"),
+                        row.getBigDecimal("source_available_power_kw"),
+                        row.getBigDecimal("allocated_power_kw"),
                         row.getBigDecimal("expected_energy_kwh"), row.getBigDecimal("score")
                 )).list();
         var baseline = loadBaseline(header.id());
