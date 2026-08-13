@@ -21,6 +21,8 @@ import io.voltweave.intelligence.domain.WeightedAllocator.CandidateResource;
 import io.voltweave.intelligence.domain.WeightedAllocator.Weights;
 import io.voltweave.intelligence.flexibility.application.model.FlexibilityCandidate;
 import io.voltweave.intelligence.flexibility.persistence.FlexibilityRepository;
+import io.voltweave.intelligence.forecast.persistence.ForecastRepository;
+import io.voltweave.intelligence.optimization.application.model.DispatchInput;
 import io.voltweave.intelligence.optimization.application.model.OptimizationCandidate;
 import io.voltweave.intelligence.optimization.application.model.OptimizationPreview;
 import io.voltweave.intelligence.optimization.persistence.OptimizationRepository;
@@ -33,23 +35,27 @@ public class OptimizationApplicationService {
 
     private final FlexibilityRepository flexibilityRepository;
     private final OptimizationRepository optimizationRepository;
+    private final ForecastRepository forecastRepository;
     private final Clock clock;
 
     @Autowired
     public OptimizationApplicationService(
             FlexibilityRepository flexibilityRepository,
-            OptimizationRepository optimizationRepository
+            OptimizationRepository optimizationRepository,
+            ForecastRepository forecastRepository
     ) {
-        this(flexibilityRepository, optimizationRepository, Clock.systemUTC());
+        this(flexibilityRepository, optimizationRepository, forecastRepository, Clock.systemUTC());
     }
 
     OptimizationApplicationService(
             FlexibilityRepository flexibilityRepository,
             OptimizationRepository optimizationRepository,
+            ForecastRepository forecastRepository,
             Clock clock
     ) {
         this.flexibilityRepository = flexibilityRepository;
         this.optimizationRepository = optimizationRepository;
+        this.forecastRepository = forecastRepository;
         this.clock = clock;
     }
 
@@ -108,6 +114,27 @@ public class OptimizationApplicationService {
     @Transactional(readOnly = true)
     public Optional<OptimizationPreview> latest(UUID organizationId, UUID vppId) {
         return optimizationRepository.latest(organizationId, vppId);
+    }
+
+    @Transactional(readOnly = true)
+    public DispatchInput dispatchInput(UUID organizationId, UUID vppId, UUID previewId) {
+        Instant now = clock.instant();
+        var preview = optimizationRepository.find(organizationId, vppId, previewId)
+                .orElseThrow(() -> new IllegalStateException("Optimization preview is unavailable"));
+        var forecast = forecastRepository.latest(organizationId, vppId)
+                .filter(value -> value.validUntil().isAfter(now))
+                .orElseThrow(() -> new IllegalStateException("A valid forecast baseline is required"));
+        return new DispatchInput(
+                preview.id(), preview.version(), organizationId, vppId,
+                preview.targetPowerKw(), preview.requiredPowerKw(), preview.plannedPowerKw(),
+                preview.feasible(), forecast.id(), forecast.version(), forecast.modelName(),
+                forecast.modelVersion(), forecast.validUntil(),
+                preview.candidates().stream().filter(candidate ->
+                        candidate.allocatedPowerKw().signum() > 0).toList(),
+                forecast.points().stream().map(point -> new DispatchInput.BaselinePoint(
+                        point.forecastAt(), point.baselineGridImportKw()
+                )).toList()
+        );
     }
 
     private static CandidateResource resource(

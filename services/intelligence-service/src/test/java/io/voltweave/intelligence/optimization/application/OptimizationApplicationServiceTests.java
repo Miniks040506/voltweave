@@ -26,6 +26,7 @@ import io.voltweave.intelligence.domain.WeightedAllocator.Weights;
 import io.voltweave.intelligence.flexibility.application.model.FlexibilityCandidate;
 import io.voltweave.intelligence.flexibility.application.model.FlexibilitySnapshot;
 import io.voltweave.intelligence.flexibility.persistence.FlexibilityRepository;
+import io.voltweave.intelligence.forecast.persistence.ForecastRepository;
 import io.voltweave.intelligence.optimization.application.model.OptimizationPreview;
 import io.voltweave.intelligence.optimization.persistence.OptimizationRepository;
 
@@ -36,14 +37,16 @@ class OptimizationApplicationServiceTests {
 
     private FlexibilityRepository flexibilityRepository;
     private OptimizationRepository optimizationRepository;
+    private ForecastRepository forecastRepository;
     private OptimizationApplicationService service;
 
     @BeforeEach
     void setUp() {
         flexibilityRepository = mock(FlexibilityRepository.class);
         optimizationRepository = mock(OptimizationRepository.class);
+        forecastRepository = mock(ForecastRepository.class);
         service = new OptimizationApplicationService(
-                flexibilityRepository, optimizationRepository,
+                flexibilityRepository, optimizationRepository, forecastRepository,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
         when(optimizationRepository.nextVersion(ORGANIZATION_ID, VPP_ID, NOW)).thenReturn(1L);

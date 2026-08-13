@@ -128,6 +128,33 @@ public class OptimizationRepository {
                 )).optional().map(this::withCandidates);
     }
 
+    public Optional<OptimizationPreview> find(
+            UUID organizationId,
+            UUID vppId,
+            UUID previewId
+    ) {
+        return jdbcClient.sql("""
+                SELECT * FROM optimization_previews
+                WHERE vpp_organization_id = :organizationId
+                  AND vpp_id = :vppId AND id = :previewId
+                """)
+                .param("organizationId", organizationId)
+                .param("vppId", vppId)
+                .param("previewId", previewId)
+                .query((row, rowNumber) -> new PreviewHeader(
+                        row.getObject("id", UUID.class),
+                        row.getObject("vpp_organization_id", UUID.class),
+                        row.getObject("vpp_id", UUID.class), row.getLong("version"),
+                        row.getObject("flexibility_snapshot_id", UUID.class),
+                        row.getLong("flexibility_snapshot_version"),
+                        row.getBigDecimal("target_power_kw"),
+                        row.getBigDecimal("reserve_margin_percent"),
+                        row.getBigDecimal("required_power_kw"),
+                        row.getBigDecimal("planned_power_kw"), row.getBoolean("feasible"),
+                        row.getString("weight_version"), row.getTimestamp("created_at").toInstant()
+                )).optional().map(this::withCandidates);
+    }
+
     private OptimizationPreview withCandidates(PreviewHeader header) {
         List<OptimizationCandidate> candidates = jdbcClient.sql("""
                 SELECT * FROM optimization_candidates
