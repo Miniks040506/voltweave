@@ -51,6 +51,11 @@ info:
     description: Generates immutable energy forecasts and flexibility snapshots
 
 voltweave:
+  tariff:
+    off-peak-price: ${TARIFF_OFF_PEAK_PRICE:0.10}
+    peak-price: ${TARIFF_PEAK_PRICE:0.30}
+    peak-start-hour-utc: ${TARIFF_PEAK_START_HOUR_UTC:17}
+    peak-end-hour-utc: ${TARIFF_PEAK_END_HOUR_UTC:21}
   projection:
     enabled: ${INTELLIGENCE_PROJECTION_ENABLED:true}
   forecast:
