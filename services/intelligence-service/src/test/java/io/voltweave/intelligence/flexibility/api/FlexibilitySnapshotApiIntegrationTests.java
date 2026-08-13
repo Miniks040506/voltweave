@@ -70,7 +70,8 @@ class FlexibilitySnapshotApiIntegrationTests {
     @BeforeEach
     void prepareInputs() {
         jdbcClient.sql("""
-                TRUNCATE flexibility_candidates, flexibility_snapshots, flexibility_versions,
+                TRUNCATE optimization_candidates, optimization_previews, optimization_versions,
+                         flexibility_candidates, flexibility_snapshots, flexibility_versions,
                          device_telemetry_projection
                 """).update();
         when(portfolioClient.resourcesForVpp(VPP_ID)).thenReturn(List.of(battery()));
