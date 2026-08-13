@@ -26,7 +26,11 @@ import io.voltweave.intelligence.domain.WeightedAllocator.Weights;
 import io.voltweave.intelligence.flexibility.application.model.FlexibilityCandidate;
 import io.voltweave.intelligence.flexibility.application.model.FlexibilitySnapshot;
 import io.voltweave.intelligence.flexibility.persistence.FlexibilityRepository;
+import io.voltweave.intelligence.forecast.application.model.Forecast;
+import io.voltweave.intelligence.forecast.application.model.ForecastPoint;
+import io.voltweave.intelligence.forecast.domain.enums.ForecastHorizon;
 import io.voltweave.intelligence.forecast.persistence.ForecastRepository;
+import io.voltweave.intelligence.optimization.application.model.OptimizationCandidate;
 import io.voltweave.intelligence.optimization.application.model.OptimizationPreview;
 import io.voltweave.intelligence.optimization.persistence.OptimizationRepository;
 
@@ -113,6 +117,32 @@ class OptimizationApplicationServiceTests {
         ));
     }
 
+    @Test
+    void freezesCoveredBaselineAndRejectsExpiredPreviewSource() {
+        UUID previewId = UUID.randomUUID();
+        Instant startAt = NOW.plusSeconds(900);
+        var preview = preview(previewId);
+        when(optimizationRepository.find(ORGANIZATION_ID, VPP_ID, previewId))
+                .thenReturn(Optional.of(preview));
+        when(optimizationRepository.isSourceSnapshotValid(ORGANIZATION_ID, previewId, NOW))
+                .thenReturn(true);
+        when(forecastRepository.latest(ORGANIZATION_ID, VPP_ID))
+                .thenReturn(Optional.of(forecast(startAt)));
+
+        var input = service.dispatchInput(
+                ORGANIZATION_ID, VPP_ID, previewId, startAt, startAt.plusSeconds(1800)
+        );
+
+        assertEquals(2, input.baselinePoints().size());
+        assertEquals(1, input.allocations().size());
+
+        when(optimizationRepository.isSourceSnapshotValid(ORGANIZATION_ID, previewId, NOW))
+                .thenReturn(false);
+        assertThrows(IllegalStateException.class, () -> service.dispatchInput(
+                ORGANIZATION_ID, VPP_ID, previewId, startAt, startAt.plusSeconds(1800)
+        ));
+    }
+
     private static FlexibilitySnapshot snapshot(
             Instant validUntil,
             List<FlexibilityCandidate> candidates
@@ -134,6 +164,39 @@ class OptimizationApplicationServiceTests {
         return new FlexibilityCandidate(
                 UUID.randomUUID(), UUID.fromString(deviceId), type,
                 new BigDecimal(power), new BigDecimal(power), new BigDecimal(energy), reason
+        );
+    }
+
+    private static OptimizationPreview preview(UUID previewId) {
+        var allocated = new OptimizationCandidate(
+                UUID.randomUUID(), UUID.randomUUID(), "BATTERY",
+                new BigDecimal("6"), new BigDecimal("3"), BigDecimal.ONE,
+                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                BigDecimal.ONE, new BigDecimal("5"), true
+        );
+        var unused = new OptimizationCandidate(
+                UUID.randomUUID(), UUID.randomUUID(), "EV_CHARGER",
+                new BigDecimal("2"), BigDecimal.ONE, BigDecimal.ONE,
+                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                BigDecimal.ONE, BigDecimal.ZERO, true
+        );
+        return new OptimizationPreview(
+                previewId, ORGANIZATION_ID, VPP_ID, 2, UUID.randomUUID(), 3,
+                new BigDecimal("5"), BigDecimal.ZERO, new BigDecimal("5"),
+                new BigDecimal("5"), true, "V1", NOW, List.of(allocated, unused)
+        );
+    }
+
+    private static Forecast forecast(Instant startAt) {
+        return new Forecast(
+                UUID.randomUUID(), ORGANIZATION_ID, VPP_ID, 4, ForecastHorizon.HOUR_1,
+                "persistence-v1", "1.0", NOW, NOW.minusSeconds(3600), NOW,
+                startAt, startAt.plusSeconds(3600), NOW.plusSeconds(3600),
+                List.of(
+                        new ForecastPoint(startAt, new BigDecimal("20"), BigDecimal.ZERO),
+                        new ForecastPoint(startAt.plusSeconds(900), new BigDecimal("19"), BigDecimal.ZERO),
+                        new ForecastPoint(startAt.plusSeconds(1800), new BigDecimal("18"), BigDecimal.ZERO)
+                )
         );
     }
 }

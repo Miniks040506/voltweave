@@ -130,6 +130,9 @@ public class OptimizationApplicationService {
         }
         var preview = optimizationRepository.find(organizationId, vppId, previewId)
                 .orElseThrow(() -> new IllegalStateException("Optimization preview is unavailable"));
+        if (!optimizationRepository.isSourceSnapshotValid(organizationId, previewId, now)) {
+            throw new IllegalStateException("Optimization preview source snapshot has expired");
+        }
         var forecast = forecastRepository.latest(organizationId, vppId)
                 .filter(value -> value.validUntil().isAfter(now))
                 .orElseThrow(() -> new IllegalStateException("A valid forecast baseline is required"));
