@@ -1,10 +1,14 @@
 package io.voltweave.dispatch.access;
 
+import java.util.List;
 import java.util.UUID;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+
+import io.voltweave.dispatch.application.model.AutomationPolicy;
 
 @Component
 public class PortfolioAccessClient {
@@ -34,6 +38,13 @@ public class PortfolioAccessClient {
             throw new IllegalStateException("VPP recovery policy is unavailable");
         }
         return response;
+    }
+
+    public List<AutomationPolicy> activeAutomationPolicies() {
+        var response = restClient.get().uri("/internal/v1/automation-policies")
+                .retrieve().body(new ParameterizedTypeReference<List<AutomationPolicy>>() {
+                });
+        return response == null ? List.of() : List.copyOf(response);
     }
 
     private record AccessCheckRequest(String subjectId, String resourceType, UUID resourceId) {

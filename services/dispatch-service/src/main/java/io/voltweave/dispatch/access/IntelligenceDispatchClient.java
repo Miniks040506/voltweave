@@ -3,6 +3,7 @@ package io.voltweave.dispatch.access;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.Set;
 import java.util.List;
 import java.util.UUID;
@@ -10,6 +11,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
+
+import io.voltweave.dispatch.application.model.AutomationPlan;
+import io.voltweave.dispatch.application.model.AutomationPolicy;
 
 @Component
 public class IntelligenceDispatchClient {
@@ -73,6 +77,32 @@ public class IntelligenceDispatchClient {
         return plan;
     }
 
+    public Optional<AutomationPlan> automationPlan(AutomationPolicy policy) {
+        try {
+            var response = restClient.post().uri(
+                            "/internal/v1/vpps/{vppId}/automation-plans", policy.vppId()
+                    )
+                    .body(new AutomationPlanRequest(
+                            policy.organizationId(), policy.peakImportLimitKw(),
+                            policy.maxDispatchPowerKw(), policy.maxDispatchDurationMinutes(),
+                            BigDecimal.valueOf(policy.reserveMarginPercent())
+                    ))
+                    .retrieve().toEntity(AutomationPlanResponse.class);
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                return Optional.empty();
+            }
+            var plan = response.getBody();
+            return Optional.of(new AutomationPlan(
+                    plan.scheduledStartAt(), Duration.ofMinutes(plan.durationMinutes()),
+                    plan.optimizationPreviewId(), plan.feasible()
+            ));
+        } catch (org.springframework.web.client.HttpClientErrorException.NotFound exception) {
+            return Optional.empty();
+        } catch (RestClientResponseException exception) {
+            throw new IllegalStateException("Intelligence automation plan was rejected", exception);
+        }
+    }
+
     public record DispatchInput(
             UUID optimizationPreviewId, long optimizationPreviewVersion,
             UUID organizationId, UUID vppId,
@@ -108,6 +138,23 @@ public class IntelligenceDispatchClient {
             BigDecimal plannedPowerKw,
             boolean feasible,
             List<Allocation> candidates
+    ) {
+    }
+
+    private record AutomationPlanRequest(
+            UUID organizationId,
+            BigDecimal peakImportLimitKw,
+            BigDecimal maxDispatchPowerKw,
+            int maxDispatchDurationMinutes,
+            BigDecimal reserveMarginPercent
+    ) {
+    }
+
+    private record AutomationPlanResponse(
+            Instant scheduledStartAt,
+            long durationMinutes,
+            UUID optimizationPreviewId,
+            boolean feasible
     ) {
     }
 }

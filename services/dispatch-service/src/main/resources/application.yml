@@ -64,6 +64,8 @@ voltweave:
   performance:
     recovery-poll-delay: ${PERFORMANCE_RECOVERY_POLL_DELAY:1s}
     stale-after: ${PERFORMANCE_STALE_AFTER:15s}
+  automation:
+    evaluation-delay: ${AUTOMATION_EVALUATION_DELAY:1m}
   portfolio:
     base-url: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
   intelligence:
