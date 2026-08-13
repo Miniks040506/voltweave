@@ -39,6 +39,7 @@
     <modules>
         <module>libs/event-contracts</module>
         <module>services/api-gateway</module>
+        <module>services/dispatch-service</module>
         <module>services/intelligence-service</module>
         <module>services/portfolio-service</module>
         <module>services/settlement-service</module>
