@@ -69,7 +69,7 @@ public class TelemetryProcessingJobs {
                         clock.instant().plus(delaySeconds, ChronoUnit.SECONDS),
                         message
                 );
-                LOGGER.warn("Failed to publish normalized telemetry {}", event.eventId(), failure);
+                LOGGER.warn("Failed to publish outbox event {}", event.eventId(), failure);
             }
         }
     }

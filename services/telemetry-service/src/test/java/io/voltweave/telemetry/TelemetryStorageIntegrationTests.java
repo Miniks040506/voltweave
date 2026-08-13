@@ -56,9 +56,9 @@ class TelemetryStorageIntegrationTests {
                   AND table_name IN (
                     'telemetry_points', 'telemetry_dedup',
                     'quarantined_telemetry', 'device_twins',
-                    'event_inbox', 'event_outbox'
+                    'event_inbox', 'event_outbox', 'command_deliveries'
                   )
-                """)).isEqualTo("6");
+                """)).isEqualTo("7");
         assertThat(value("""
                 SELECT count(*) FROM information_schema.columns
                 WHERE table_schema = 'public'
@@ -75,10 +75,10 @@ class TelemetryStorageIntegrationTests {
                   AND tablename IN (
                     'telemetry_points', 'telemetry_dedup',
                     'quarantined_telemetry', 'device_twins',
-                    'event_inbox', 'event_outbox'
+                    'event_inbox', 'event_outbox', 'command_deliveries'
                   )
                   AND tableowner = current_user
-                """)).isEqualTo("6");
+                """)).isEqualTo("7");
     }
 
     @Test
