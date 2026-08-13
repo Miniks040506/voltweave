@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: settlement-service
+  datasource:
+    url: ${SETTLEMENT_DB_URL:jdbc:postgresql://localhost:6543/settlement_db}
+    username: ${SETTLEMENT_DB_USERNAME:settlement_app}
+    password: ${SETTLEMENT_DB_PASSWORD:local-settlement-change-me}
+  flyway:
+    validate-migration-naming: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: settlement-dispatch-v1
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        isolation.level: read_committed
+    listener:
+      ack-mode: record
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/voltweave}
+      client:
+        registration:
+          voltweave-internal:
+            provider: keycloak
+            client-id: voltweave-internal
+            client-secret: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:local-internal-change-me}
+            authorization-grant-type: client_credentials
+        provider:
+          keycloak:
+            token-uri: ${OIDC_TOKEN_URI:http://localhost:8180/realms/voltweave/protocol/openid-connect/token}
+
+server:
+  port: ${PORT:8085}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Owns immutable dispatch settlement inputs and calculations
+
+voltweave:
+  dispatch:
+    base-url: ${DISPATCH_SERVICE_URL:http://localhost:8084}
+  portfolio:
+    base-url: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
