@@ -119,7 +119,7 @@ public final class WeightedAllocator {
             }
         }
 
-        double score(CandidateResource candidate) {
+        public double score(CandidateResource candidate) {
             return reliability * candidate.reliability()
                     + availableSoc * candidate.availableSoc()
                     + responseSpeed * candidate.responseSpeed()
