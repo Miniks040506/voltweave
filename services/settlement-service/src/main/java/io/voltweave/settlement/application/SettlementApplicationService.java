@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -71,6 +72,16 @@ public class SettlementApplicationService {
                 completion.completedAt(),
                 baselinePoints, lines
         ));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Settlement> find(UUID settlementId) {
+        return repository.findById(settlementId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Settlement> findByDispatch(UUID dispatchId) {
+        return repository.findByDispatchId(dispatchId);
     }
 
     private static void validate(
