@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import io.voltweave.settlement.PostgresTestConfiguration;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.kafka.listener.auto-startup=false")
 @Import(PostgresTestConfiguration.class)
 @Transactional
 class SettlementSchemaIntegrationTests {
