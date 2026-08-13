@@ -1,6 +1,8 @@
 package io.voltweave.portfolio.vpp.persistence;
 
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -91,5 +93,24 @@ public class AutomationPolicyRepository {
                 .param("vppId", vppId)
                 .query(ROW_MAPPER)
                 .optional();
+    }
+
+    public List<AutomationPolicy> findEnabledCurrent(Instant now) {
+        return jdbcClient.sql("""
+                SELECT policy.* FROM (
+                    SELECT DISTINCT ON (organization_id, vpp_id) *
+                    FROM automation_policies
+                    ORDER BY organization_id, vpp_id, version DESC
+                ) policy
+                JOIN virtual_power_plants vpp
+                  ON vpp.organization_id = policy.organization_id
+                 AND vpp.id = policy.vpp_id
+                 AND vpp.status = 'ACTIVE'
+                WHERE policy.enabled AND policy.effective_from <= :now
+                ORDER BY policy.organization_id, policy.vpp_id
+                """)
+                .param("now", Timestamp.from(now))
+                .query(ROW_MAPPER)
+                .list();
     }
 }

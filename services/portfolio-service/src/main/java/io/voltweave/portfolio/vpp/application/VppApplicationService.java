@@ -1,6 +1,7 @@
 package io.voltweave.portfolio.vpp.application;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -195,6 +196,11 @@ public class VppApplicationService {
     public AutomationPolicy currentPolicy(UUID organizationId, UUID vppId) {
         return policyRepository.findCurrent(organizationId, vppId)
                 .orElseThrow(() -> new VppNotFoundException(vppId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<AutomationPolicy> activeAutomationPolicies() {
+        return policyRepository.findEnabledCurrent(Instant.now());
     }
 
     private VirtualPowerPlant requireVpp(UUID vppId, String subjectId) {
