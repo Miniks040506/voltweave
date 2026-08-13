@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record DeviceTelemetry(
+        UUID organizationId,
         UUID deviceId,
         UUID siteId,
         String deviceType,

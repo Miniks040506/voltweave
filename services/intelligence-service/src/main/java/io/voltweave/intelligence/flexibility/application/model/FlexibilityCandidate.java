@@ -10,6 +10,6 @@ public record FlexibilityCandidate(
         BigDecimal rawUpwardFlexibilityKw,
         BigDecimal upwardFlexibilityKw,
         BigDecimal availableEnergyKwh,
-        String unavailableReason
+        String limitingReason
 ) {
 }

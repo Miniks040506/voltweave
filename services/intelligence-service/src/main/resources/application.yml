@@ -58,5 +58,6 @@ voltweave:
     freshness: ${FORECAST_FRESHNESS:30m}
   flexibility:
     freshness: ${FLEXIBILITY_TELEMETRY_FRESHNESS:5m}
+    future-skew: ${FLEXIBILITY_TELEMETRY_FUTURE_SKEW:30s}
   portfolio:
     base-url: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}

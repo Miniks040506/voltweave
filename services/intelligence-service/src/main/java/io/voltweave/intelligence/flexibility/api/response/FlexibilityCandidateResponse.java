@@ -12,13 +12,13 @@ public record FlexibilityCandidateResponse(
         BigDecimal rawUpwardFlexibilityKw,
         BigDecimal upwardFlexibilityKw,
         BigDecimal availableEnergyKwh,
-        String unavailableReason
+        String limitingReason
 ) {
     static FlexibilityCandidateResponse from(FlexibilityCandidate candidate) {
         return new FlexibilityCandidateResponse(
                 candidate.siteId(), candidate.deviceId(), candidate.deviceType(),
                 candidate.rawUpwardFlexibilityKw(), candidate.upwardFlexibilityKw(),
-                candidate.availableEnergyKwh(), candidate.unavailableReason()
+                candidate.availableEnergyKwh(), candidate.limitingReason()
         );
     }
 }

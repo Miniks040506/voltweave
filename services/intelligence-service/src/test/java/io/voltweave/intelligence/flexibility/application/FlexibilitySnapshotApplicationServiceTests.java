@@ -46,7 +46,7 @@ class FlexibilitySnapshotApplicationServiceTests {
     private final FlexibilityRepository repository = mock(FlexibilityRepository.class);
     private final FlexibilitySnapshotApplicationService service =
             new FlexibilitySnapshotApplicationService(
-                    portfolioClient, repository, Duration.ofMinutes(5),
+                    portfolioClient, repository, Duration.ofMinutes(5), Duration.ofSeconds(30),
                     Clock.fixed(NOW, ZoneOffset.UTC)
             );
 
@@ -59,7 +59,8 @@ class FlexibilitySnapshotApplicationServiceTests {
         when(repository.latestTelemetry(EV_ID)).thenReturn(Optional.of(
                 telemetry(EV_ID, "EV_CHARGER", "4", "80")
         ));
-        when(repository.latestSiteTelemetry(SITE_ID, "SMART_METER")).thenReturn(Optional.of(
+        when(repository.latestSiteTelemetry(ORGANIZATION_ID, SITE_ID, "SMART_METER"))
+                .thenReturn(Optional.of(
                 telemetry(UUID.randomUUID(), "SMART_METER", "6", null)
         ));
         when(repository.nextVersion(ORGANIZATION_ID, VPP_ID, NOW)).thenReturn(7L);
@@ -73,7 +74,7 @@ class FlexibilitySnapshotApplicationServiceTests {
                 .compareTo(new BigDecimal("5.000")));
         assertEquals(0, snapshot.candidates().get(1).upwardFlexibilityKw()
                 .compareTo(new BigDecimal("1.000")));
-        assertEquals("SITE_IMPORT_LIMIT", snapshot.candidates().get(1).unavailableReason());
+        assertEquals("SITE_IMPORT_LIMIT", snapshot.candidates().get(1).limitingReason());
         verify(repository).insert(snapshot);
     }
 
@@ -83,14 +84,39 @@ class FlexibilitySnapshotApplicationServiceTests {
         when(repository.latestTelemetry(BATTERY_ID)).thenReturn(Optional.of(
                 telemetry(BATTERY_ID, "BATTERY", "0", "80")
         ));
-        when(repository.latestSiteTelemetry(SITE_ID, "SMART_METER")).thenReturn(Optional.empty());
+        when(repository.latestSiteTelemetry(ORGANIZATION_ID, SITE_ID, "SMART_METER"))
+                .thenReturn(Optional.empty());
         when(repository.nextVersion(ORGANIZATION_ID, VPP_ID, NOW)).thenReturn(1L);
 
         var snapshot = service.generate(ORGANIZATION_ID, VPP_ID, Duration.ofHours(1));
 
         assertEquals(0, snapshot.upwardFlexibilityKw().compareTo(new BigDecimal("0.000")));
         assertEquals("SITE_METER_UNAVAILABLE", snapshot.candidates().getFirst()
-                .unavailableReason());
+                .limitingReason());
+    }
+
+    @Test
+    void rejectsTelemetryFromAnotherTenant() {
+        when(portfolioClient.resourcesForVpp(VPP_ID)).thenReturn(List.of(battery()));
+        var wrongTenant = telemetry(BATTERY_ID, "BATTERY", "0", "80");
+        when(repository.latestTelemetry(BATTERY_ID)).thenReturn(Optional.of(
+                new DeviceTelemetry(
+                        UUID.randomUUID(), wrongTenant.deviceId(), wrongTenant.siteId(),
+                        wrongTenant.deviceType(), wrongTenant.observedAt(),
+                        wrongTenant.receivedAt(), wrongTenant.activePowerKw(),
+                        wrongTenant.socPercent(), wrongTenant.online(), wrongTenant.quality()
+                )
+        ));
+        when(repository.latestSiteTelemetry(ORGANIZATION_ID, SITE_ID, "SMART_METER"))
+                .thenReturn(Optional.of(
+                        telemetry(UUID.randomUUID(), "SMART_METER", "6", null)
+                ));
+        when(repository.nextVersion(ORGANIZATION_ID, VPP_ID, NOW)).thenReturn(1L);
+
+        var snapshot = service.generate(ORGANIZATION_ID, VPP_ID, Duration.ofHours(1));
+
+        assertEquals("TELEMETRY_MISMATCH", snapshot.candidates().getFirst().limitingReason());
+        assertEquals(0, snapshot.upwardFlexibilityKw().compareTo(new BigDecimal("0.000")));
     }
 
     private static PortfolioFlexibilityResource battery() {
@@ -117,7 +143,7 @@ class FlexibilitySnapshotApplicationServiceTests {
             String soc
     ) {
         return new DeviceTelemetry(
-                deviceId, SITE_ID, type, NOW, NOW, new BigDecimal(power),
+                ORGANIZATION_ID, deviceId, SITE_ID, type, NOW, NOW, new BigDecimal(power),
                 soc == null ? null : new BigDecimal(soc), true, "VALID"
         );
     }

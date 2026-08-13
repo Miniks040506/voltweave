@@ -24,12 +24,13 @@ public class FlexibilityRepository {
 
     public Optional<DeviceTelemetry> latestTelemetry(UUID deviceId) {
         return jdbcClient.sql("""
-                SELECT device_id, site_id, device_type, last_observed_at,
+                SELECT organization_id, device_id, site_id, device_type, last_observed_at,
                        last_received_at, active_power_kw, soc_percent, online, quality
                 FROM device_telemetry_projection WHERE device_id = :deviceId
                 """)
                 .param("deviceId", deviceId)
                 .query((row, rowNumber) -> new DeviceTelemetry(
+                        row.getObject("organization_id", UUID.class),
                         row.getObject("device_id", UUID.class),
                         row.getObject("site_id", UUID.class), row.getString("device_type"),
                         row.getTimestamp("last_observed_at").toInstant(),
@@ -39,17 +40,24 @@ public class FlexibilityRepository {
                 )).optional();
     }
 
-    public Optional<DeviceTelemetry> latestSiteTelemetry(UUID siteId, String deviceType) {
+    public Optional<DeviceTelemetry> latestSiteTelemetry(
+            UUID organizationId,
+            UUID siteId,
+            String deviceType
+    ) {
         return jdbcClient.sql("""
-                SELECT device_id, site_id, device_type, last_observed_at,
+                SELECT organization_id, device_id, site_id, device_type, last_observed_at,
                        last_received_at, active_power_kw, soc_percent, online, quality
                 FROM device_telemetry_projection
-                WHERE site_id = :siteId AND device_type = :deviceType
+                WHERE organization_id = :organizationId
+                  AND site_id = :siteId AND device_type = :deviceType
                 ORDER BY last_observed_at DESC, last_received_at DESC LIMIT 1
                 """)
+                .param("organizationId", organizationId)
                 .param("siteId", siteId)
                 .param("deviceType", deviceType)
                 .query((row, rowNumber) -> new DeviceTelemetry(
+                        row.getObject("organization_id", UUID.class),
                         row.getObject("device_id", UUID.class),
                         row.getObject("site_id", UUID.class), row.getString("device_type"),
                         row.getTimestamp("last_observed_at").toInstant(),
@@ -100,7 +108,7 @@ public class FlexibilityRepository {
                     INSERT INTO flexibility_candidates (
                         vpp_organization_id, snapshot_id, site_id, device_id, device_type,
                         raw_upward_flexibility_kw, upward_flexibility_kw,
-                        available_energy_kwh, unavailable_reason
+                        available_energy_kwh, limiting_reason
                     ) VALUES (
                         :organizationId, :snapshotId, :siteId, :deviceId, :deviceType,
                         :rawPowerKw, :powerKw, :energyKwh, :reason
@@ -114,7 +122,7 @@ public class FlexibilityRepository {
                     .param("rawPowerKw", candidate.rawUpwardFlexibilityKw())
                     .param("powerKw", candidate.upwardFlexibilityKw())
                     .param("energyKwh", candidate.availableEnergyKwh())
-                    .param("reason", candidate.unavailableReason())
+                    .param("reason", candidate.limitingReason())
                     .update();
         }
     }
@@ -142,7 +150,7 @@ public class FlexibilityRepository {
     private FlexibilitySnapshot withCandidates(SnapshotHeader header) {
         List<FlexibilityCandidate> candidates = jdbcClient.sql("""
                 SELECT site_id, device_id, device_type, raw_upward_flexibility_kw,
-                       upward_flexibility_kw, available_energy_kwh, unavailable_reason
+                       upward_flexibility_kw, available_energy_kwh, limiting_reason
                 FROM flexibility_candidates
                 WHERE vpp_organization_id = :organizationId AND snapshot_id = :snapshotId
                 ORDER BY site_id, device_id
@@ -155,7 +163,7 @@ public class FlexibilityRepository {
                         row.getBigDecimal("raw_upward_flexibility_kw"),
                         row.getBigDecimal("upward_flexibility_kw"),
                         row.getBigDecimal("available_energy_kwh"),
-                        row.getString("unavailable_reason")
+                        row.getString("limiting_reason")
                 )).list();
         return new FlexibilitySnapshot(
                 header.id(), header.organizationId(), header.vppId(), header.version(),

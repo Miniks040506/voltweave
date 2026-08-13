@@ -33,29 +33,36 @@ public class FlexibilitySnapshotApplicationService {
     private final PortfolioFlexibilityClient portfolioClient;
     private final FlexibilityRepository repository;
     private final Duration telemetryFreshness;
+    private final Duration futureSkew;
     private final Clock clock;
 
     @Autowired
     public FlexibilitySnapshotApplicationService(
             PortfolioFlexibilityClient portfolioClient,
             FlexibilityRepository repository,
-            @Value("${voltweave.flexibility.freshness:5m}") Duration telemetryFreshness
+            @Value("${voltweave.flexibility.freshness:5m}") Duration telemetryFreshness,
+            @Value("${voltweave.flexibility.future-skew:30s}") Duration futureSkew
     ) {
-        this(portfolioClient, repository, telemetryFreshness, Clock.systemUTC());
+        this(portfolioClient, repository, telemetryFreshness, futureSkew, Clock.systemUTC());
     }
 
     FlexibilitySnapshotApplicationService(
             PortfolioFlexibilityClient portfolioClient,
             FlexibilityRepository repository,
             Duration telemetryFreshness,
+            Duration futureSkew,
             Clock clock
     ) {
         if (telemetryFreshness.isZero() || telemetryFreshness.isNegative()) {
             throw new IllegalArgumentException("telemetry freshness must be positive");
         }
+        if (futureSkew.isNegative()) {
+            throw new IllegalArgumentException("future skew must not be negative");
+        }
         this.portfolioClient = portfolioClient;
         this.repository = repository;
         this.telemetryFreshness = telemetryFreshness;
+        this.futureSkew = futureSkew;
         this.clock = clock;
     }
 
@@ -106,7 +113,10 @@ public class FlexibilitySnapshotApplicationService {
     ) {
         var drafts = resources.stream().map(resource -> draft(resource, now, dispatchDuration))
                 .toList();
-        var meter = repository.latestSiteTelemetry(resources.getFirst().siteId(), "SMART_METER")
+        var firstResource = resources.getFirst();
+        var meter = repository.latestSiteTelemetry(
+                firstResource.organizationId(), firstResource.siteId(), "SMART_METER"
+        )
                 .filter(value -> usable(value, now));
         if (meter.isEmpty() || meter.orElseThrow().activePowerKw().signum() <= 0) {
             String reason = meter.isEmpty()
@@ -144,7 +154,8 @@ public class FlexibilitySnapshotApplicationService {
             return unavailable(resource, "TELEMETRY_UNAVAILABLE");
         }
         DeviceTelemetry value = telemetry.orElseThrow();
-        if (!resource.siteId().equals(value.siteId())
+        if (!resource.organizationId().equals(value.organizationId())
+                || !resource.siteId().equals(value.siteId())
                 || !resource.deviceType().equals(value.deviceType())) {
             return unavailable(resource, "TELEMETRY_MISMATCH");
         }
@@ -194,7 +205,7 @@ public class FlexibilitySnapshotApplicationService {
     private boolean usable(DeviceTelemetry value, Instant now) {
         return value.online() && "VALID".equals(value.quality())
                 && !value.observedAt().isBefore(now.minus(telemetryFreshness))
-                && !value.observedAt().isAfter(now);
+                && !value.observedAt().isAfter(now.plus(futureSkew));
     }
 
     private static CandidateDraft unavailable(

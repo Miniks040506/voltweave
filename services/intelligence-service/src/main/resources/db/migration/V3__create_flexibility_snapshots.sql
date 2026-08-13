@@ -39,7 +39,7 @@ CREATE TABLE flexibility_candidates (
     raw_upward_flexibility_kw NUMERIC(14, 3) NOT NULL,
     upward_flexibility_kw NUMERIC(14, 3) NOT NULL,
     available_energy_kwh NUMERIC(14, 3) NOT NULL,
-    unavailable_reason VARCHAR(80),
+    limiting_reason VARCHAR(80),
     PRIMARY KEY (snapshot_id, device_id),
     CONSTRAINT flexibility_candidates_snapshot_fk
         FOREIGN KEY (vpp_organization_id, snapshot_id)
