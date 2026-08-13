@@ -2,6 +2,7 @@ package io.voltweave.dispatch.api.controller;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -20,9 +21,14 @@ import org.springframework.web.bind.annotation.RestController;
 import io.voltweave.dispatch.access.PortfolioAccessClient;
 import io.voltweave.dispatch.api.request.CreateDispatchRequest;
 import io.voltweave.dispatch.api.response.DispatchResponse;
+import io.voltweave.dispatch.api.response.DeviceCommandResponse;
+import io.voltweave.dispatch.application.CommandApplicationService;
 import io.voltweave.dispatch.application.DispatchApplicationService;
+import io.voltweave.dispatch.application.model.Dispatch;
 import io.voltweave.dispatch.application.model.CreateDispatchCommand;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
+import io.voltweave.dispatch.http.CorrelationIdFilter;
 
 @RestController
 @RequestMapping("/api/v1/dispatches")
@@ -30,13 +36,16 @@ import jakarta.validation.Valid;
 public class DispatchController {
     private final PortfolioAccessClient accessClient;
     private final DispatchApplicationService dispatchService;
+    private final CommandApplicationService commandService;
 
     public DispatchController(
             PortfolioAccessClient accessClient,
-            DispatchApplicationService dispatchService
+            DispatchApplicationService dispatchService,
+            CommandApplicationService commandService
     ) {
         this.accessClient = accessClient;
         this.dispatchService = dispatchService;
+        this.commandService = commandService;
     }
 
     @PostMapping
@@ -61,11 +70,34 @@ public class DispatchController {
             @AuthenticationPrincipal Jwt jwt
     ) {
         return ResponseEntity.of(dispatchService.find(dispatchId).map(dispatch -> {
-            UUID organizationId = accessClient.requireVppAccess(jwt.getSubject(), dispatch.vppId());
-            if (!organizationId.equals(dispatch.organizationId())) {
-                throw new AccessDeniedException("Dispatch access denied");
-            }
+            requireAccess(jwt, dispatch);
             return DispatchResponse.from(dispatch);
         }));
+    }
+
+    @PostMapping("/{dispatchId}/commands")
+    public ResponseEntity<List<DeviceCommandResponse>> prepareCommands(
+            @PathVariable UUID dispatchId,
+            @AuthenticationPrincipal Jwt jwt,
+            HttpServletRequest request
+    ) {
+        Dispatch dispatch = dispatchService.find(dispatchId).orElse(null);
+        if (dispatch == null) {
+            return ResponseEntity.notFound().build();
+        }
+        requireAccess(jwt, dispatch);
+        var commands = commandService.prepare(
+                dispatchId,
+                UUID.fromString(request.getAttribute(CorrelationIdFilter.ATTRIBUTE).toString())
+        )
+                .stream().map(DeviceCommandResponse::from).toList();
+        return ResponseEntity.ok(commands);
+    }
+
+    private void requireAccess(Jwt jwt, Dispatch dispatch) {
+        UUID organizationId = accessClient.requireVppAccess(jwt.getSubject(), dispatch.vppId());
+        if (!organizationId.equals(dispatch.organizationId())) {
+            throw new AccessDeniedException("Dispatch access denied");
+        }
     }
 }

@@ -132,6 +132,34 @@ class DispatchApiIntegrationTests {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void preparesCommandsOnceWithFrozenDeviceTargetAndOutbox() throws Exception {
+        Instant startAt = nextQuarterHour();
+        allow("operator", ORGANIZATION_ID);
+        when(intelligenceClient.input(
+                ORGANIZATION_ID, VPP_ID, PREVIEW_ID, startAt, startAt.plusSeconds(1800)
+        )).thenReturn(dispatchInput(startAt));
+        String dispatchId = JsonPath.read(
+                create("operator", "prepare-command", startAt, 30, 201), "$.id"
+        );
+
+        for (int replay = 0; replay < 2; replay++) {
+            mockMvc.perform(post("/api/v1/dispatches/{id}/commands", dispatchId)
+                            .with(operator("operator")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].status").value("REQUESTED"))
+                    .andExpect(jsonPath("$[0].targetPowerKw").value(-11.0));
+        }
+
+        assertThat(jdbcClient.sql("SELECT status FROM dispatches WHERE id = :id")
+                .param("id", UUID.fromString(dispatchId)).query(String.class).single())
+                .isEqualTo("PREPARING");
+        assertThat(jdbcClient.sql("SELECT count(*) FROM device_commands")
+                .query(Integer.class).single()).isEqualTo(1);
+        assertThat(jdbcClient.sql("SELECT count(*) FROM event_outbox")
+                .query(Integer.class).single()).isEqualTo(1);
+    }
+
     private String create(
             String subject, String key, Instant startAt, int durationMinutes, int statusCode
     ) throws Exception {
