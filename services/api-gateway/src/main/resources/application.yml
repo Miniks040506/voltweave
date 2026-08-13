@@ -23,6 +23,10 @@ spring:
               uri: ${INTELLIGENCE_SERVICE_URL:http://localhost:8083}
               predicates:
                 - Path=/api/v1/vpps/*/flexibility
+            - id: intelligence-optimization
+              uri: ${INTELLIGENCE_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/v1/vpps/*/optimization-preview
             - id: portfolio-organizations
               uri: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
               predicates:
