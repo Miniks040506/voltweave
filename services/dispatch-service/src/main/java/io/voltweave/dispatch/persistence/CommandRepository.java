@@ -107,39 +107,37 @@ public class CommandRepository {
                 .update();
     }
 
-    public List<StalledDispatch> lockStalledDispatches(Instant now, int limit) {
+    public List<StalledCommand> lockStalledCommands(Instant now, int limit) {
         return jdbcClient.sql("""
-                SELECT d.organization_id, d.id
-                FROM dispatches d
+                SELECT c.organization_id, c.dispatch_id, c.id
+                FROM device_commands c
+                JOIN dispatches d ON d.id = c.dispatch_id
                 WHERE d.status = 'PREPARING'
-                  AND EXISTS (
-                    SELECT 1 FROM device_commands c
-                    WHERE c.dispatch_id = d.id
-                      AND (
-                        c.status = 'REJECTED'
-                        OR (c.status = 'REQUESTED' AND c.acknowledgement_deadline_at <= :now)
-                      )
+                  AND (
+                    c.status = 'REJECTED'
+                    OR (c.status = 'REQUESTED' AND c.acknowledgement_deadline_at <= :now)
                   )
-                ORDER BY d.scheduled_start_at, d.id
-                LIMIT :limit FOR UPDATE SKIP LOCKED
+                ORDER BY c.acknowledgement_deadline_at, c.id
+                LIMIT :limit FOR UPDATE OF c SKIP LOCKED
                 """)
                 .param("now", timestamp(now))
                 .param("limit", limit)
-                .query((row, rowNumber) -> new StalledDispatch(
+                .query((row, rowNumber) -> new StalledCommand(
                         row.getObject("organization_id", UUID.class),
+                        row.getObject("dispatch_id", UUID.class),
                         row.getObject("id", UUID.class)
                 )).list();
     }
 
-    public void timeOutUnacknowledged(UUID dispatchId, Instant now) {
+    public void timeOutUnacknowledged(UUID commandId, Instant now) {
         jdbcClient.sql("""
                 UPDATE device_commands
                 SET status = 'TIMED_OUT', rejection_reason = 'ACKNOWLEDGEMENT_TIMEOUT',
                     acknowledged_at = :now, version = version + 1
-                WHERE dispatch_id = :dispatchId AND status = 'REQUESTED'
+                WHERE id = :commandId AND status = 'REQUESTED'
                   AND acknowledgement_deadline_at <= :now
                 """)
-                .param("dispatchId", dispatchId)
+                .param("commandId", commandId)
                 .param("now", timestamp(now))
                 .update();
     }
@@ -234,7 +232,7 @@ public class CommandRepository {
         return Timestamp.from(value);
     }
 
-    public record StalledDispatch(UUID organizationId, UUID dispatchId) {
+    public record StalledCommand(UUID organizationId, UUID dispatchId, UUID commandId) {
     }
 
     private DeviceCommand mapCommand(java.sql.ResultSet row, int rowNumber)

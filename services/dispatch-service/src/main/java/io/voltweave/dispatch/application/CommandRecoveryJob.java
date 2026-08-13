@@ -30,10 +30,10 @@ public class CommandRecoveryJob {
     @Transactional
     public void recoverStalled() {
         var now = clock.instant();
-        for (var dispatch : repository.lockStalledDispatches(now, BATCH_SIZE)) {
-            repository.timeOutUnacknowledged(dispatch.dispatchId(), now);
+        for (var command : repository.lockStalledCommands(now, BATCH_SIZE)) {
+            repository.timeOutUnacknowledged(command.commandId(), now);
             repository.failPreparingDispatch(
-                    dispatch.organizationId(), dispatch.dispatchId()
+                    command.organizationId(), command.dispatchId()
             );
         }
     }
