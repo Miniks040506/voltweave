@@ -33,6 +33,7 @@ class AutomationPlanningServiceTests {
     private ForecastRepository forecasts;
     private FlexibilitySnapshotApplicationService flexibility;
     private OptimizationApplicationService optimization;
+    private SimulatedTariffSchedule tariff;
     private AutomationPlanningService service;
 
     @BeforeEach
@@ -40,8 +41,10 @@ class AutomationPlanningServiceTests {
         forecasts = mock(ForecastRepository.class);
         flexibility = mock(FlexibilitySnapshotApplicationService.class);
         optimization = mock(OptimizationApplicationService.class);
+        tariff = mock(SimulatedTariffSchedule.class);
         service = new AutomationPlanningService(
-                forecasts, flexibility, optimization, Clock.fixed(NOW, ZoneOffset.UTC)
+                forecasts, flexibility, optimization, tariff,
+                Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
 
@@ -77,6 +80,32 @@ class AutomationPlanningServiceTests {
                 30, BigDecimal.ZERO
         ).isEmpty());
         verify(flexibility, never()).generate(ORGANIZATION_ID, VPP_ID, Duration.ofMinutes(30));
+    }
+
+    @Test
+    void createsPricePlanOnlyForIntervalsAboveThreshold() {
+        var forecast = forecast(
+                new BigDecimal("4"), new BigDecimal("3"), new BigDecimal("2")
+        );
+        when(forecasts.latest(ORGANIZATION_ID, VPP_ID)).thenReturn(Optional.of(forecast));
+        when(tariff.priceAt(forecast.points().get(0).forecastAt()))
+                .thenReturn(new BigDecimal("0.30"));
+        when(tariff.priceAt(forecast.points().get(1).forecastAt()))
+                .thenReturn(new BigDecimal("0.30"));
+        when(tariff.priceAt(forecast.points().get(2).forecastAt()))
+                .thenReturn(new BigDecimal("0.10"));
+        var preview = mock(OptimizationPreview.class);
+        when(optimization.generate(
+                ORGANIZATION_ID, VPP_ID, new BigDecimal("3"), BigDecimal.ZERO
+        )).thenReturn(preview);
+
+        var plan = service.priceThresholdPlan(
+                ORGANIZATION_ID, VPP_ID, new BigDecimal("0.20"),
+                new BigDecimal("5"), 60, BigDecimal.ZERO
+        ).orElseThrow();
+
+        assertEquals(Duration.ofMinutes(30), plan.duration());
+        assertEquals(preview, plan.preview());
     }
 
     private static Forecast forecast(BigDecimal... powers) {
