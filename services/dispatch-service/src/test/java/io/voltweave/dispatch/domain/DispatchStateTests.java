@@ -31,4 +31,13 @@ class DispatchStateTests {
                 () -> new DispatchState(DispatchStatus.COMPLETED)
                         .transitionTo(DispatchStatus.ACTIVE));
     }
+
+    @Test
+    void completionCanTakeOwnershipWhileRebalancingAtTheDeadline() {
+        var state = new DispatchState(DispatchStatus.REBALANCING)
+                .transitionTo(DispatchStatus.COMPLETING)
+                .transitionTo(DispatchStatus.PARTIALLY_COMPLETED);
+
+        assertEquals(DispatchStatus.PARTIALLY_COMPLETED, state.status());
+    }
 }
