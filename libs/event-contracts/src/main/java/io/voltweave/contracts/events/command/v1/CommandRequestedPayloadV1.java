@@ -13,6 +13,7 @@ public record CommandRequestedPayloadV1(
         String commandType,
         BigDecimal targetPowerKw,
         Instant validFrom,
+        Instant acknowledgementDeadlineAt,
         Instant expiresAt,
         UUID supersedesCommandId
 ) {
@@ -23,10 +24,19 @@ public record CommandRequestedPayloadV1(
         Objects.requireNonNull(deviceId, "deviceId is required");
         Objects.requireNonNull(targetPowerKw, "targetPowerKw is required");
         Objects.requireNonNull(validFrom, "validFrom is required");
+        Objects.requireNonNull(
+                acknowledgementDeadlineAt, "acknowledgementDeadlineAt is required"
+        );
         Objects.requireNonNull(expiresAt, "expiresAt is required");
         commandType = requireText(commandType, "commandType", 32);
         if (!validFrom.isBefore(expiresAt)) {
             throw new IllegalArgumentException("validFrom must precede expiresAt");
+        }
+        if (acknowledgementDeadlineAt.isBefore(validFrom)
+                || acknowledgementDeadlineAt.isAfter(expiresAt)) {
+            throw new IllegalArgumentException(
+                    "acknowledgementDeadlineAt must be within the command interval"
+            );
         }
     }
 

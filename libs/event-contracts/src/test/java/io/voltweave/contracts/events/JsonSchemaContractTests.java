@@ -58,7 +58,7 @@ class JsonSchemaContractTests {
         assertThat(requiredFields(schema("command-requested.schema.json")))
                 .containsExactlyInAnyOrder(
                         "commandId", "dispatchId", "siteId", "deviceId", "commandType",
-                        "targetPowerKw", "validFrom", "expiresAt"
+                        "targetPowerKw", "validFrom", "acknowledgementDeadlineAt", "expiresAt"
                 );
         assertThat(requiredFields(schema("command-acknowledged.schema.json")))
                 .containsExactlyInAnyOrder(

@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": [
     "commandId", "dispatchId", "siteId", "deviceId", "commandType",
-    "targetPowerKw", "validFrom", "expiresAt"
+    "targetPowerKw", "validFrom", "acknowledgementDeadlineAt", "expiresAt"
   ],
   "properties": {
     "commandId": { "type": "string", "format": "uuid" },
@@ -16,6 +16,7 @@
     "commandType": { "const": "SET_POWER" },
     "targetPowerKw": { "type": "number" },
     "validFrom": { "type": "string", "format": "date-time" },
+    "acknowledgementDeadlineAt": { "type": "string", "format": "date-time" },
     "expiresAt": { "type": "string", "format": "date-time" },
     "supersedesCommandId": { "type": ["string", "null"], "format": "uuid" }
   }

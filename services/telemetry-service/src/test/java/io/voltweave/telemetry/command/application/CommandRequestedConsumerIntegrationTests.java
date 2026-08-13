@@ -100,7 +100,7 @@ class CommandRequestedConsumerIntegrationTests {
     private ConsumerRecord<String, String> record(UUID eventId) throws Exception {
         var payload = new CommandRequestedPayloadV1(
                 commandId(), DISPATCH_ID, SITE_ID, DEVICE_ID, "SET_POWER",
-                new BigDecimal("-12.500"), VALID_FROM,
+                new BigDecimal("-12.500"), VALID_FROM, VALID_FROM.plusSeconds(30),
                 VALID_FROM.plusSeconds(900), null
         );
         var event = new EventEnvelopeV1<>(

@@ -15,9 +15,19 @@ class CommandPayloadV1Tests {
     void rejectsInvalidCommandInterval() {
         assertThatThrownBy(() -> new CommandRequestedPayloadV1(
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                "SET_POWER", BigDecimal.ONE, START, START, null
+                "SET_POWER", BigDecimal.ONE, START, START, START, null
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("validFrom must precede expiresAt");
+    }
+
+    @Test
+    void rejectsAcknowledgementDeadlineOutsideCommandInterval() {
+        assertThatThrownBy(() -> new CommandRequestedPayloadV1(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                "SET_POWER", BigDecimal.ONE, START, START.minusSeconds(1),
+                START.plusSeconds(60), null
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("acknowledgementDeadlineAt must be within the command interval");
     }
 
     @Test
