@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -95,6 +96,29 @@ class OptimizationApplicationServiceTests {
 
         assertFalse(result.feasible());
         assertEquals(new BigDecimal("2.000"), result.plannedPowerKw());
+    }
+
+    @Test
+    void excludesDevicesAlreadyAssignedToTheActiveDispatch() {
+        UUID assigned = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        when(flexibilityRepository.latest(ORGANIZATION_ID, VPP_ID))
+                .thenReturn(Optional.of(snapshot(NOW.plusSeconds(60), List.of(
+                        candidate(assigned.toString(), "BATTERY", "5", "5", null),
+                        candidate("00000000-0000-0000-0000-000000000002",
+                                "BATTERY", "4", "4", null)
+                ))));
+
+        var result = service.generate(
+                ORGANIZATION_ID, VPP_ID, new BigDecimal("3"), BigDecimal.ZERO,
+                Set.of(assigned)
+        );
+
+        assertTrue(result.feasible());
+        assertEquals(BigDecimal.ZERO.setScale(3), result.candidates().stream()
+                .filter(candidate -> candidate.deviceId().equals(assigned))
+                .findFirst().orElseThrow().allocatedPowerKw());
+        assertEquals("00000000-0000-0000-0000-000000000002",
+                result.candidates().getFirst().deviceId().toString());
     }
 
     @Test

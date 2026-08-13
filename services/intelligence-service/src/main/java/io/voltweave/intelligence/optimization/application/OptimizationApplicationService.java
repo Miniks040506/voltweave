@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,8 +67,20 @@ public class OptimizationApplicationService {
             BigDecimal targetPowerKw,
             BigDecimal reserveMarginPercent
     ) {
+        return generate(organizationId, vppId, targetPowerKw, reserveMarginPercent, Set.of());
+    }
+
+    @Transactional
+    public OptimizationPreview generate(
+            UUID organizationId,
+            UUID vppId,
+            BigDecimal targetPowerKw,
+            BigDecimal reserveMarginPercent,
+            Set<UUID> excludedDeviceIds
+    ) {
         Objects.requireNonNull(organizationId, "organizationId is required");
         Objects.requireNonNull(vppId, "vppId is required");
+        Objects.requireNonNull(excludedDeviceIds, "excludedDeviceIds is required");
         requirePositive(targetPowerKw, "targetPowerKw");
         requirePercentage(reserveMarginPercent, "reserveMarginPercent");
 
@@ -85,7 +98,9 @@ public class OptimizationApplicationService {
                 .map(FlexibilityCandidate::availableEnergyKwh)
                 .max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
         var resources = snapshot.candidates().stream()
-                .map(candidate -> resource(candidate, maxEnergy)).toList();
+                .map(candidate -> resource(
+                        candidate, maxEnergy, !excludedDeviceIds.contains(candidate.deviceId())
+                )).toList();
         var plan = WeightedAllocator.allocate(
                 resources, targetPowerKw.doubleValue(), reserveMarginPercent.doubleValue(), WEIGHTS
         );
@@ -93,7 +108,10 @@ public class OptimizationApplicationService {
         plan.allocations().forEach(value -> allocations.put(value.deviceId(), value));
 
         List<OptimizationCandidate> candidates = snapshot.candidates().stream()
-                .map(candidate -> optimized(candidate, maxEnergy, allocations))
+                .map(candidate -> optimized(
+                        candidate, maxEnergy, allocations,
+                        !excludedDeviceIds.contains(candidate.deviceId())
+                ))
                 .sorted(Comparator.comparing(OptimizationCandidate::allocatedPowerKw).reversed()
                         .thenComparing(Comparator.comparing(
                                 OptimizationCandidate::score
@@ -158,9 +176,10 @@ public class OptimizationApplicationService {
 
     private static CandidateResource resource(
             FlexibilityCandidate candidate,
-            BigDecimal maxEnergy
+            BigDecimal maxEnergy,
+            boolean included
     ) {
-        boolean eligible = eligible(candidate);
+        boolean eligible = included && eligible(candidate);
         return new CandidateResource(
                 candidate.deviceId().toString(), candidate.upwardFlexibilityKw().doubleValue(),
                 eligible ? 1.0 : 0.0, availableSoc(candidate, maxEnergy),
@@ -173,9 +192,10 @@ public class OptimizationApplicationService {
     private static OptimizationCandidate optimized(
             FlexibilityCandidate candidate,
             BigDecimal maxEnergy,
-            Map<String, WeightedAllocator.Allocation> allocations
+            Map<String, WeightedAllocator.Allocation> allocations,
+            boolean included
     ) {
-        var resource = resource(candidate, maxEnergy);
+        var resource = resource(candidate, maxEnergy, included);
         var allocation = allocations.get(resource.deviceId());
         return new OptimizationCandidate(
                 candidate.siteId(), candidate.deviceId(), candidate.deviceType(),
