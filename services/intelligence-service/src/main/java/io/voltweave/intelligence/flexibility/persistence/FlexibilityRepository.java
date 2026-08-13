@@ -39,6 +39,26 @@ public class FlexibilityRepository {
                 )).optional();
     }
 
+    public Optional<DeviceTelemetry> latestSiteTelemetry(UUID siteId, String deviceType) {
+        return jdbcClient.sql("""
+                SELECT device_id, site_id, device_type, last_observed_at,
+                       last_received_at, active_power_kw, soc_percent, online, quality
+                FROM device_telemetry_projection
+                WHERE site_id = :siteId AND device_type = :deviceType
+                ORDER BY last_observed_at DESC, last_received_at DESC LIMIT 1
+                """)
+                .param("siteId", siteId)
+                .param("deviceType", deviceType)
+                .query((row, rowNumber) -> new DeviceTelemetry(
+                        row.getObject("device_id", UUID.class),
+                        row.getObject("site_id", UUID.class), row.getString("device_type"),
+                        row.getTimestamp("last_observed_at").toInstant(),
+                        row.getTimestamp("last_received_at").toInstant(),
+                        row.getBigDecimal("active_power_kw"), row.getBigDecimal("soc_percent"),
+                        row.getBoolean("online"), row.getString("quality")
+                )).optional();
+    }
+
     public long nextVersion(UUID organizationId, UUID vppId, Instant now) {
         return jdbcClient.sql("""
                 INSERT INTO flexibility_versions (
