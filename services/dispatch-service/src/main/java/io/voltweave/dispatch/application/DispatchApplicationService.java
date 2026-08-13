@@ -22,6 +22,7 @@ import io.voltweave.dispatch.access.IntelligenceDispatchClient.DispatchInput;
 import io.voltweave.dispatch.application.model.CreateDispatchCommand;
 import io.voltweave.dispatch.application.model.Dispatch;
 import io.voltweave.dispatch.domain.enums.DispatchStatus;
+import io.voltweave.dispatch.exception.IdempotencyConflictException;
 import io.voltweave.dispatch.persistence.DispatchRepository;
 
 @Service
@@ -60,7 +61,9 @@ public class DispatchApplicationService {
         );
         if (existing.isPresent()) {
             if (!existing.orElseThrow().requestHash().equals(requestHash)) {
-                throw new IllegalStateException("Idempotency key was reused with another request");
+                throw new IdempotencyConflictException(
+                        "Idempotency key was reused with another request"
+                );
             }
             return repository.find(command.organizationId(), existing.orElseThrow().resourceId())
                     .orElseThrow(() -> new IllegalStateException(
@@ -102,6 +105,11 @@ public class DispatchApplicationService {
     @Transactional(readOnly = true)
     public Optional<Dispatch> find(UUID organizationId, UUID dispatchId) {
         return repository.find(organizationId, dispatchId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Dispatch> find(UUID dispatchId) {
+        return repository.findById(dispatchId);
     }
 
     private void validate(CreateDispatchCommand command) {
