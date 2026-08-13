@@ -55,6 +55,16 @@ class JsonSchemaContractTests {
                         "siteId", "deviceId", "sequenceNumber", "observedAt",
                         "receivedAt", "deviceType", "activePowerKw", "online", "quality"
                 );
+        assertThat(requiredFields(schema("command-requested.schema.json")))
+                .containsExactlyInAnyOrder(
+                        "commandId", "dispatchId", "siteId", "deviceId", "commandType",
+                        "targetPowerKw", "validFrom", "expiresAt"
+                );
+        assertThat(requiredFields(schema("command-acknowledged.schema.json")))
+                .containsExactlyInAnyOrder(
+                        "commandId", "dispatchId", "siteId", "deviceId", "status",
+                        "appliedPowerKw", "processedAt"
+                );
     }
 
     @Test

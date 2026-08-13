@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voltweave.dev/schemas/events/v1/command-requested.schema.json",
+  "title": "Command Requested Payload V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "commandId", "dispatchId", "siteId", "deviceId", "commandType",
+    "targetPowerKw", "validFrom", "expiresAt"
+  ],
+  "properties": {
+    "commandId": { "type": "string", "format": "uuid" },
+    "dispatchId": { "type": "string", "format": "uuid" },
+    "siteId": { "type": "string", "format": "uuid" },
+    "deviceId": { "type": "string", "format": "uuid" },
+    "commandType": { "const": "SET_POWER" },
+    "targetPowerKw": { "type": "number" },
+    "validFrom": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "supersedesCommandId": { "type": ["string", "null"], "format": "uuid" }
+  }
+}

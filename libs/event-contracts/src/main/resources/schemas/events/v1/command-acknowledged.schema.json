@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voltweave.dev/schemas/events/v1/command-acknowledged.schema.json",
+  "title": "Command Acknowledged Payload V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "commandId", "dispatchId", "siteId", "deviceId",
+    "status", "appliedPowerKw", "processedAt"
+  ],
+  "properties": {
+    "commandId": { "type": "string", "format": "uuid" },
+    "dispatchId": { "type": "string", "format": "uuid" },
+    "siteId": { "type": "string", "format": "uuid" },
+    "deviceId": { "type": "string", "format": "uuid" },
+    "status": { "enum": ["ACCEPTED", "REJECTED"] },
+    "appliedPowerKw": { "type": "number" },
+    "reason": { "type": ["string", "null"], "maxLength": 500 },
+    "processedAt": { "type": "string", "format": "date-time" }
+  }
+}
