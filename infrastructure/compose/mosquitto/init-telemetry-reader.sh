@@ -3,6 +3,8 @@ set -eu
 
 role=telemetry-reader
 topic='voltweave/+/+/+/telemetry'
+ack_topic='voltweave/+/+/+/ack'
+command_topic='voltweave/+/+/+/command'
 username="$MQTT_TELEMETRY_USERNAME"
 
 control() {
@@ -17,5 +19,8 @@ control deleteRole "$role" >/dev/null 2>&1 || true
 control createRole "$role"
 control addRoleACL "$role" subscribeLiteral "$topic" allow
 control addRoleACL "$role" publishClientReceive "$topic" allow
+control addRoleACL "$role" subscribeLiteral "$ack_topic" allow
+control addRoleACL "$role" publishClientReceive "$ack_topic" allow
+control addRoleACL "$role" publishClientSend "$command_topic" allow
 control createClient "$username" -i telemetry-service -p "$MQTT_TELEMETRY_PASSWORD"
 control addClientRole "$username" "$role" 1

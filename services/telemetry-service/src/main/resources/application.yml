@@ -61,6 +61,7 @@ voltweave:
     username: ${MQTT_TELEMETRY_USERNAME:telemetry-service}
     password: ${MQTT_TELEMETRY_PASSWORD:local-telemetry-mqtt-change-me}
     topic: voltweave/+/+/+/telemetry
+    ack-topic: voltweave/+/+/+/ack
   processing:
     enabled: ${TELEMETRY_PROCESSING_ENABLED:true}
     stale-after: ${TELEMETRY_STALE_AFTER:5m}
@@ -70,6 +71,7 @@ voltweave:
     outbox-poll-delay: ${TELEMETRY_OUTBOX_POLL_DELAY:1s}
   command:
     enabled: ${TELEMETRY_COMMAND_ENABLED:true}
+    poll-delay: ${TELEMETRY_COMMAND_POLL_DELAY:1s}
   portfolio:
     base-url: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
   realtime:
