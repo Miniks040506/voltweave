@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 @Component
 public class IntelligenceDispatchClient {
@@ -23,14 +24,19 @@ public class IntelligenceDispatchClient {
             Instant startAt,
             Instant endAt
     ) {
-        var input = restClient.get()
-                .uri(builder -> builder
-                        .path("/internal/v1/vpps/{vppId}/dispatch-inputs/{previewId}")
-                        .queryParam("organizationId", organizationId)
-                        .queryParam("startAt", startAt)
-                        .queryParam("endAt", endAt)
-                        .build(vppId, previewId))
-                .retrieve().body(DispatchInput.class);
+        DispatchInput input;
+        try {
+            input = restClient.get()
+                    .uri(builder -> builder
+                            .path("/internal/v1/vpps/{vppId}/dispatch-inputs/{previewId}")
+                            .queryParam("organizationId", organizationId)
+                            .queryParam("startAt", startAt)
+                            .queryParam("endAt", endAt)
+                            .build(vppId, previewId))
+                    .retrieve().body(DispatchInput.class);
+        } catch (RestClientResponseException exception) {
+            throw new IllegalStateException("Intelligence dispatch input was rejected", exception);
+        }
         if (input == null) {
             throw new IllegalStateException("Intelligence dispatch input is unavailable");
         }
