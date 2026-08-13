@@ -2,6 +2,7 @@ package io.voltweave.intelligence.optimization.api;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -118,6 +119,27 @@ class OptimizationPreviewApiIntegrationTests {
         when(accessClient.requireVppAccess("operator-21", VPP_ID))
                 .thenReturn(OTHER_ORGANIZATION_ID);
         generate().andExpect(status().isUnprocessableContent());
+    }
+
+    @Test
+    void protectsDispatchInputWithInternalClientIdentity() throws Exception {
+        generate().andExpect(status().isOk());
+        UUID previewId = jdbcClient.sql("SELECT id FROM optimization_previews")
+                .query(UUID.class).single();
+        String internalPath = "/internal/v1/vpps/" + VPP_ID + "/dispatch-inputs/" + previewId;
+
+        mockMvc.perform(get(internalPath).with(operatorJwt())
+                        .param("organizationId", ORGANIZATION_ID.toString())
+                        .param("startAt", Instant.now().plusSeconds(900).toString())
+                        .param("endAt", Instant.now().plusSeconds(1800).toString()))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get(internalPath).with(jwt().jwt(token -> token
+                                .claim("azp", "voltweave-internal")))
+                        .param("organizationId", ORGANIZATION_ID.toString())
+                        .param("startAt", Instant.now().plusSeconds(900).toString())
+                        .param("endAt", Instant.now().plusSeconds(1800).toString()))
+                .andExpect(status().isUnprocessableContent());
     }
 
     private org.springframework.test.web.servlet.ResultActions generate() throws Exception {
