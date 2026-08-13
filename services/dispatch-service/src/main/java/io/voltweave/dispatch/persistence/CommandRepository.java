@@ -3,6 +3,7 @@ package io.voltweave.dispatch.persistence;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -14,6 +15,7 @@ import io.voltweave.dispatch.domain.enums.DispatchStatus;
 
 @Repository
 public class CommandRepository {
+    public static final String ACK_CONSUMER = "dispatch-command-acks-v1";
     private final JdbcClient jdbcClient;
 
     public CommandRepository(JdbcClient jdbcClient) {
@@ -34,23 +36,75 @@ public class CommandRepository {
                 """)
                 .param("organizationId", organizationId)
                 .param("dispatchId", dispatchId)
-                .query((row, rowNumber) -> new DeviceCommand(
-                        row.getObject("id", UUID.class),
-                        row.getObject("organization_id", UUID.class),
-                        row.getObject("dispatch_id", UUID.class),
-                        row.getObject("site_id", UUID.class),
-                        row.getObject("device_id", UUID.class),
-                        row.getString("command_type"), row.getBigDecimal("target_power_kw"),
-                        row.getTimestamp("valid_from").toInstant(),
-                        row.getTimestamp("expires_at").toInstant(),
-                        CommandStatus.valueOf(row.getString("status")),
-                        row.getBigDecimal("applied_power_kw"),
-                        row.getString("rejection_reason"),
-                        row.getTimestamp("requested_at").toInstant(),
-                        row.getTimestamp("acknowledged_at") == null ? null
-                                : row.getTimestamp("acknowledged_at").toInstant(),
-                        row.getLong("version")
-                )).list();
+                .query(this::mapCommand).list();
+    }
+
+    public boolean recordAcknowledgementIfNew(
+            UUID eventId,
+            String eventType,
+            Instant receivedAt
+    ) {
+        return jdbcClient.sql("""
+                INSERT INTO event_inbox (consumer_name, event_id, event_type, received_at)
+                VALUES (:consumer, :eventId, :eventType, :receivedAt)
+                ON CONFLICT (consumer_name, event_id) DO NOTHING
+                """)
+                .param("consumer", ACK_CONSUMER)
+                .param("eventId", eventId)
+                .param("eventType", eventType)
+                .param("receivedAt", timestamp(receivedAt))
+                .update() == 1;
+    }
+
+    public Optional<DeviceCommand> lockById(UUID organizationId, UUID commandId) {
+        return jdbcClient.sql("""
+                SELECT * FROM device_commands
+                WHERE organization_id = :organizationId AND id = :commandId
+                FOR UPDATE
+                """)
+                .param("organizationId", organizationId)
+                .param("commandId", commandId)
+                .query(this::mapCommand).optional();
+    }
+
+    public void acknowledge(
+            UUID commandId,
+            CommandStatus status,
+            java.math.BigDecimal appliedPowerKw,
+            String rejectionReason,
+            Instant acknowledgedAt
+    ) {
+        jdbcClient.sql("""
+                UPDATE device_commands
+                SET status = :status, applied_power_kw = :appliedPowerKw,
+                    rejection_reason = :rejectionReason,
+                    acknowledged_at = :acknowledgedAt, version = version + 1
+                WHERE id = :commandId AND status = 'REQUESTED'
+                """)
+                .param("commandId", commandId)
+                .param("status", status.name())
+                .param("appliedPowerKw", appliedPowerKw)
+                .param("rejectionReason", rejectionReason)
+                .param("acknowledgedAt", timestamp(acknowledgedAt))
+                .update();
+    }
+
+    public void activateWhenAllCommandsAccepted(UUID organizationId, UUID dispatchId) {
+        jdbcClient.sql("""
+                UPDATE dispatches SET status = 'ACTIVE', version = version + 1
+                WHERE organization_id = :organizationId AND id = :dispatchId
+                  AND status = 'PREPARING'
+                  AND EXISTS (
+                    SELECT 1 FROM device_commands WHERE dispatch_id = :dispatchId
+                  )
+                  AND NOT EXISTS (
+                    SELECT 1 FROM device_commands
+                    WHERE dispatch_id = :dispatchId AND status <> 'ACCEPTED'
+                  )
+                """)
+                .param("organizationId", organizationId)
+                .param("dispatchId", dispatchId)
+                .update();
     }
 
     public void insert(
@@ -124,5 +178,22 @@ public class CommandRepository {
 
     private static Timestamp timestamp(Instant value) {
         return Timestamp.from(value);
+    }
+
+    private DeviceCommand mapCommand(java.sql.ResultSet row, int rowNumber)
+            throws java.sql.SQLException {
+        return new DeviceCommand(
+                row.getObject("id", UUID.class), row.getObject("organization_id", UUID.class),
+                row.getObject("dispatch_id", UUID.class), row.getObject("site_id", UUID.class),
+                row.getObject("device_id", UUID.class), row.getString("command_type"),
+                row.getBigDecimal("target_power_kw"), row.getTimestamp("valid_from").toInstant(),
+                row.getTimestamp("expires_at").toInstant(),
+                CommandStatus.valueOf(row.getString("status")),
+                row.getBigDecimal("applied_power_kw"), row.getString("rejection_reason"),
+                row.getTimestamp("requested_at").toInstant(),
+                row.getTimestamp("acknowledged_at") == null ? null
+                        : row.getTimestamp("acknowledged_at").toInstant(),
+                row.getLong("version")
+        );
     }
 }
