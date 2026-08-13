@@ -78,6 +78,11 @@ public class CommandApplicationService {
         DispatchStatus targetStatus = new DispatchState(dispatch.status())
                 .transitionTo(DispatchStatus.PREPARING).status();
         var requestedAt = clock.instant();
+        commandRepository.reserve(
+                dispatch.organizationId(), dispatch.id(),
+                dispatch.allocations().stream().map(Dispatch.Allocation::deviceId).toList(),
+                dispatch.scheduledStartAt(), dispatch.scheduledEndAt(), requestedAt
+        );
         var acknowledgementDeadline = min(
                 dispatch.scheduledStartAt().plus(acknowledgementTimeout),
                 dispatch.scheduledEndAt()

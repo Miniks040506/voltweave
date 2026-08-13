@@ -188,6 +188,35 @@ class DispatchApiIntegrationTests {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @org.springframework.transaction.annotation.Transactional(
+            propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED
+    )
+    void rejectsOverlappingDispatchForReservedDevice() throws Exception {
+        Instant startAt = nextQuarterHour();
+        allow("operator", ORGANIZATION_ID);
+        DispatchInput input = dispatchInput(startAt);
+        when(intelligenceClient.input(any(), any(), any(), any(), any())).thenReturn(input);
+        String first = JsonPath.read(
+                create("operator", "reservation-first", startAt, 30, 201), "$.id"
+        );
+        String second = JsonPath.read(
+                create("operator", "reservation-second", startAt, 30, 201), "$.id"
+        );
+
+        mockMvc.perform(post("/api/v1/dispatches/{id}/commands", first)
+                        .with(operator("operator")))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/dispatches/{id}/commands", second)
+                        .with(operator("operator")))
+                .andExpect(status().isUnprocessableEntity());
+
+        assertThat(jdbcClient.sql("SELECT count(*) FROM device_reservations")
+                .query(Integer.class).single()).isEqualTo(1);
+        assertThat(jdbcClient.sql("SELECT count(*) FROM device_commands")
+                .query(Integer.class).single()).isEqualTo(1);
+    }
+
     private String create(
             String subject, String key, Instant startAt, int durationMinutes, int statusCode
     ) throws Exception {

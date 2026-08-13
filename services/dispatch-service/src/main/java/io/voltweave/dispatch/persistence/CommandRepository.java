@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import io.voltweave.dispatch.application.model.DeviceCommand;
 import io.voltweave.dispatch.domain.enums.CommandStatus;
@@ -37,6 +38,41 @@ public class CommandRepository {
                 .param("organizationId", organizationId)
                 .param("dispatchId", dispatchId)
                 .query(this::mapCommand).list();
+    }
+
+    public void reserve(
+            UUID organizationId,
+            UUID dispatchId,
+            List<UUID> deviceIds,
+            Instant reservedFrom,
+            Instant reservedUntil,
+            Instant createdAt
+    ) {
+        try {
+            for (UUID deviceId : deviceIds) {
+                jdbcClient.sql("""
+                        INSERT INTO device_reservations (
+                            id, organization_id, dispatch_id, device_id,
+                            reserved_from, reserved_until, created_at
+                        ) VALUES (
+                            :id, :organizationId, :dispatchId, :deviceId,
+                            :reservedFrom, :reservedUntil, :createdAt
+                        )
+                        """)
+                        .param("id", UUID.randomUUID())
+                        .param("organizationId", organizationId)
+                        .param("dispatchId", dispatchId)
+                        .param("deviceId", deviceId)
+                        .param("reservedFrom", timestamp(reservedFrom))
+                        .param("reservedUntil", timestamp(reservedUntil))
+                        .param("createdAt", timestamp(createdAt))
+                        .update();
+            }
+        } catch (DataIntegrityViolationException exception) {
+            throw new IllegalStateException(
+                    "A device is already reserved by an overlapping dispatch", exception
+            );
+        }
     }
 
     public boolean recordAcknowledgementIfNew(
