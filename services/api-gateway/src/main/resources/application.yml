@@ -27,6 +27,10 @@ spring:
               uri: ${INTELLIGENCE_SERVICE_URL:http://localhost:8083}
               predicates:
                 - Path=/api/v1/vpps/*/optimization-preview
+            - id: dispatch-public
+              uri: ${DISPATCH_SERVICE_URL:http://localhost:8084}
+              predicates:
+                - Path=/api/v1/dispatches,/api/v1/dispatches/**
             - id: portfolio-organizations
               uri: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
               predicates:
