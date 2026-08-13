@@ -3,6 +3,7 @@ package io.voltweave.dispatch.application;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import io.voltweave.dispatch.application.model.AutomationPlan;
 import io.voltweave.dispatch.application.model.AutomationPolicy;
+import io.voltweave.dispatch.application.model.AutomationCandidate;
 import io.voltweave.dispatch.application.model.CreateDispatchCommand;
 import io.voltweave.dispatch.application.model.Dispatch;
 import io.voltweave.dispatch.persistence.AutomationRepository;
@@ -68,6 +70,20 @@ public class AutomationApplicationService {
             commandService.prepare(dispatch.id(), correlationId(policy, plan));
         }
         return Optional.of(dispatch);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AutomationCandidate> pendingCandidates(UUID organizationId, UUID vppId) {
+        return repository.pendingCandidates(organizationId, vppId).stream()
+                .map(reference -> new AutomationCandidate(
+                        reference.policyId(), reference.policyVersion(), reference.evaluatedAt(),
+                        dispatchService.find(organizationId, reference.dispatchId()).orElseThrow()
+                )).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isPendingCandidate(UUID organizationId, UUID dispatchId) {
+        return repository.isPendingCandidate(organizationId, dispatchId);
     }
 
     private static UUID correlationId(AutomationPolicy policy, AutomationPlan plan) {

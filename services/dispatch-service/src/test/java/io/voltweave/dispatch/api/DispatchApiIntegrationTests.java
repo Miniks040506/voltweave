@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +41,9 @@ import io.voltweave.dispatch.access.IntelligenceDispatchClient.Allocation;
 import io.voltweave.dispatch.access.IntelligenceDispatchClient.BaselinePoint;
 import io.voltweave.dispatch.access.IntelligenceDispatchClient.DispatchInput;
 import io.voltweave.dispatch.access.PortfolioAccessClient;
+import io.voltweave.dispatch.application.AutomationApplicationService;
+import io.voltweave.dispatch.application.model.AutomationPlan;
+import io.voltweave.dispatch.application.model.AutomationPolicy;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -55,6 +59,9 @@ class DispatchApiIntegrationTests {
 
     @Autowired
     private JdbcClient jdbcClient;
+
+    @Autowired
+    private AutomationApplicationService automationService;
 
     @MockitoBean
     private PortfolioAccessClient accessClient;
@@ -158,6 +165,40 @@ class DispatchApiIntegrationTests {
                 .query(Integer.class).single()).isEqualTo(1);
         assertThat(jdbcClient.sql("SELECT count(*) FROM event_outbox")
                 .query(Integer.class).single()).isEqualTo(1);
+    }
+
+    @Test
+    void listsAndApprovesOperatorAutomationCandidate() throws Exception {
+        Instant startAt = nextQuarterHour();
+        allow("operator", ORGANIZATION_ID);
+        when(intelligenceClient.input(
+                ORGANIZATION_ID, VPP_ID, PREVIEW_ID, startAt, startAt.plusSeconds(1800)
+        )).thenReturn(dispatchInput(startAt));
+        var policy = new AutomationPolicy(
+                UUID.randomUUID(), ORGANIZATION_ID, VPP_ID, "PEAK_LIMIT",
+                "REQUIRE_OPERATOR", new BigDecimal("50"), null, 10,
+                new BigDecimal("10"), 30, 2
+        );
+        var dispatch = automationService.createCandidate(policy, new AutomationPlan(
+                startAt, Duration.ofMinutes(30), PREVIEW_ID, true
+        )).orElseThrow();
+
+        mockMvc.perform(get("/api/v1/automation-candidates")
+                        .queryParam("vppId", VPP_ID.toString())
+                        .with(operator("operator")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].policyId").value(policy.id().toString()))
+                .andExpect(jsonPath("$[0].dispatch.id").value(dispatch.id().toString()))
+                .andExpect(jsonPath("$[0].dispatch.status").value("SCHEDULED"));
+
+        mockMvc.perform(post("/api/v1/automation-candidates/{id}/approve", dispatch.id())
+                        .with(operator("operator")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("REQUESTED"));
+
+        assertThat(jdbcClient.sql("SELECT status FROM dispatches WHERE id = :id")
+                .param("id", dispatch.id()).query(String.class).single())
+                .isEqualTo("PREPARING");
     }
 
     @Test
