@@ -35,6 +35,9 @@ public class IntelligenceProjectionConsumers {
             TelemetryQualityV1.STALE,
             TelemetryQualityV1.OUT_OF_ORDER
     );
+    private static final Set<String> FLEXIBILITY_DEVICE_TYPES = Set.of(
+            "SMART_METER", "BATTERY", "EV_CHARGER"
+    );
 
     private final ObjectMapper objectMapper;
     private final IntelligenceProjectionRepository repository;
@@ -110,7 +113,8 @@ public class IntelligenceProjectionConsumers {
             case "SOLAR_INVERTER" -> "SOLAR_GENERATION";
             default -> null;
         };
-        if (energyType == null) {
+        boolean flexibilityInput = FLEXIBILITY_DEVICE_TYPES.contains(telemetry.deviceType());
+        if (energyType == null && !flexibilityInput) {
             return;
         }
         if (!repository.recordEventIfNew(
@@ -118,13 +122,23 @@ public class IntelligenceProjectionConsumers {
         )) {
             return;
         }
-        BigDecimal power = "SOLAR_GENERATION".equals(energyType)
-                ? telemetry.activePowerKw().abs() : telemetry.activePowerKw();
-        repository.storeObservation(
-                envelope.tenantId(), telemetry.siteId(), telemetry.deviceId(),
-                telemetry.sequenceNumber(), telemetry.observedAt(), telemetry.receivedAt(),
-                energyType, power, telemetry.quality().name()
-        );
+        if (energyType != null) {
+            BigDecimal power = "SOLAR_GENERATION".equals(energyType)
+                    ? telemetry.activePowerKw().abs() : telemetry.activePowerKw();
+            repository.storeObservation(
+                    envelope.tenantId(), telemetry.siteId(), telemetry.deviceId(),
+                    telemetry.sequenceNumber(), telemetry.observedAt(), telemetry.receivedAt(),
+                    energyType, power, telemetry.quality().name()
+            );
+        }
+        if (flexibilityInput) {
+            repository.projectDeviceTelemetry(
+                    envelope.tenantId(), telemetry.siteId(), telemetry.deviceId(),
+                    telemetry.deviceType(), telemetry.observedAt(), telemetry.receivedAt(),
+                    telemetry.activePowerKw(), telemetry.socPercent(), telemetry.online(),
+                    telemetry.quality().name()
+            );
+        }
     }
 
     private Envelope envelope(ConsumerRecord<String, String> record, String producer) {

@@ -97,6 +97,56 @@ public class IntelligenceProjectionRepository {
                 .update();
     }
 
+    public void projectDeviceTelemetry(
+            UUID organizationId,
+            UUID siteId,
+            UUID deviceId,
+            String deviceType,
+            Instant observedAt,
+            Instant receivedAt,
+            BigDecimal activePowerKw,
+            BigDecimal socPercent,
+            boolean online,
+            String quality
+    ) {
+        jdbcClient.sql("""
+                INSERT INTO device_telemetry_projection (
+                    organization_id, site_id, device_id, device_type,
+                    last_observed_at, last_received_at, active_power_kw,
+                    soc_percent, online, quality, updated_at
+                ) VALUES (
+                    :organizationId, :siteId, :deviceId, :deviceType,
+                    :observedAt, :receivedAt, :activePowerKw,
+                    :socPercent, :online, :quality, :receivedAt
+                )
+                ON CONFLICT (device_id) DO UPDATE
+                SET organization_id = EXCLUDED.organization_id,
+                    site_id = EXCLUDED.site_id,
+                    device_type = EXCLUDED.device_type,
+                    last_observed_at = EXCLUDED.last_observed_at,
+                    last_received_at = EXCLUDED.last_received_at,
+                    active_power_kw = EXCLUDED.active_power_kw,
+                    soc_percent = EXCLUDED.soc_percent,
+                    online = EXCLUDED.online,
+                    quality = EXCLUDED.quality,
+                    updated_at = EXCLUDED.updated_at
+                WHERE (device_telemetry_projection.last_observed_at,
+                       device_telemetry_projection.last_received_at)
+                    <= (EXCLUDED.last_observed_at, EXCLUDED.last_received_at)
+                """)
+                .param("organizationId", organizationId)
+                .param("siteId", siteId)
+                .param("deviceId", deviceId)
+                .param("deviceType", deviceType)
+                .param("observedAt", timestamp(observedAt))
+                .param("receivedAt", timestamp(receivedAt))
+                .param("activePowerKw", activePowerKw)
+                .param("socPercent", socPercent)
+                .param("online", online)
+                .param("quality", quality)
+                .update();
+    }
+
     private static Timestamp timestamp(Instant value) {
         return Timestamp.from(value);
     }

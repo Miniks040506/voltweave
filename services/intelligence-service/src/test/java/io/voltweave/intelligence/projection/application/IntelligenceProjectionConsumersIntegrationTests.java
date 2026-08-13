@@ -55,7 +55,8 @@ class IntelligenceProjectionConsumersIntegrationTests {
     @BeforeEach
     void clearProjection() {
         jdbcClient.sql("""
-                TRUNCATE energy_observations, vpp_site_projection, event_inbox
+                TRUNCATE energy_observations, device_telemetry_projection,
+                    vpp_site_projection, event_inbox
                 """).update();
     }
 
@@ -110,11 +111,30 @@ class IntelligenceProjectionConsumersIntegrationTests {
         consumers.consumeTelemetry(battery);
 
         assertEquals(2L, count("energy_observations"));
-        assertEquals(2L, count("event_inbox"));
+        assertEquals(3L, count("event_inbox"));
+        assertEquals(2L, count("device_telemetry_projection"));
         assertEquals(0, jdbcClient.sql("""
                 SELECT power_kw FROM energy_observations
                 WHERE energy_type = 'SOLAR_GENERATION'
                 """).query(BigDecimal.class).single().compareTo(new BigDecimal("3.250")));
+    }
+
+    @Test
+    void retainsTheNewestControllableDeviceTelemetry() {
+        UUID batteryId = UUID.randomUUID();
+        consumers.consumeTelemetry(telemetryRecord(
+                UUID.randomUUID(), batteryId, "BATTERY", new BigDecimal("2.000"), 10
+        ));
+        consumers.consumeTelemetry(telemetryRecord(
+                UUID.randomUUID(), batteryId, "BATTERY", new BigDecimal("8.000"), 5
+        ));
+
+        assertEquals(1L, count("device_telemetry_projection"));
+        assertEquals(0, jdbcClient.sql("""
+                SELECT active_power_kw FROM device_telemetry_projection
+                WHERE device_id = :deviceId
+                """).param("deviceId", batteryId).query(BigDecimal.class)
+                .single().compareTo(new BigDecimal("2.000")));
     }
 
     @Test
