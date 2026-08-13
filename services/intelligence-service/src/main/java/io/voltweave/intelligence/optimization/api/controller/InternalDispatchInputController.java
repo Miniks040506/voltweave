@@ -1,5 +1,6 @@
 package io.voltweave.intelligence.optimization.api.controller;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,8 +25,10 @@ public class InternalDispatchInputController {
     public DispatchInput get(
             @PathVariable UUID vppId,
             @PathVariable UUID previewId,
-            @RequestParam UUID organizationId
+            @RequestParam UUID organizationId,
+            @RequestParam Instant startAt,
+            @RequestParam Instant endAt
     ) {
-        return optimizationService.dispatchInput(organizationId, vppId, previewId);
+        return optimizationService.dispatchInput(organizationId, vppId, previewId, startAt, endAt);
     }
 }

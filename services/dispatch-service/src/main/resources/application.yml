@@ -7,6 +7,21 @@ spring:
     password: ${DISPATCH_DB_PASSWORD:local-dispatch-change-me}
   flyway:
     validate-migration-naming: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/voltweave}
+      client:
+        registration:
+          voltweave-internal:
+            provider: keycloak
+            client-id: voltweave-internal
+            client-secret: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:local-internal-change-me}
+            authorization-grant-type: client_credentials
+        provider:
+          keycloak:
+            token-uri: ${OIDC_TOKEN_URI:http://localhost:8180/realms/voltweave/protocol/openid-connect/token}
 
 server:
   port: ${PORT:8084}
@@ -25,3 +40,9 @@ info:
   app:
     name: ${spring.application.name}
     description: Owns durable dispatch workflows and frozen execution inputs
+
+voltweave:
+  portfolio:
+    base-url: ${PORTFOLIO_SERVICE_URL:http://localhost:8081}
+  intelligence:
+    base-url: ${INTELLIGENCE_SERVICE_URL:http://localhost:8083}

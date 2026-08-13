@@ -117,23 +117,39 @@ public class OptimizationApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public DispatchInput dispatchInput(UUID organizationId, UUID vppId, UUID previewId) {
+    public DispatchInput dispatchInput(
+            UUID organizationId,
+            UUID vppId,
+            UUID previewId,
+            Instant startAt,
+            Instant endAt
+    ) {
         Instant now = clock.instant();
+        if (startAt == null || endAt == null || !startAt.isBefore(endAt)) {
+            throw new IllegalArgumentException("Dispatch interval is invalid");
+        }
         var preview = optimizationRepository.find(organizationId, vppId, previewId)
                 .orElseThrow(() -> new IllegalStateException("Optimization preview is unavailable"));
         var forecast = forecastRepository.latest(organizationId, vppId)
                 .filter(value -> value.validUntil().isAfter(now))
                 .orElseThrow(() -> new IllegalStateException("A valid forecast baseline is required"));
+        var baselinePoints = forecast.points().stream()
+                .filter(point -> !point.forecastAt().isBefore(startAt)
+                        && point.forecastAt().isBefore(endAt))
+                .map(point -> new DispatchInput.BaselinePoint(
+                        point.forecastAt(), point.baselineGridImportKw()
+                )).toList();
+        long expectedPoints = java.time.Duration.between(startAt, endAt).toMinutes() / 15;
+        if (baselinePoints.size() != expectedPoints) {
+            throw new IllegalStateException("Forecast does not cover the dispatch interval");
+        }
         return new DispatchInput(
                 preview.id(), preview.version(), organizationId, vppId,
                 preview.targetPowerKw(), preview.requiredPowerKw(), preview.plannedPowerKw(),
                 preview.feasible(), forecast.id(), forecast.version(), forecast.modelName(),
                 forecast.modelVersion(), forecast.validUntil(),
                 preview.candidates().stream().filter(candidate ->
-                        candidate.allocatedPowerKw().signum() > 0).toList(),
-                forecast.points().stream().map(point -> new DispatchInput.BaselinePoint(
-                        point.forecastAt(), point.baselineGridImportKw()
-                )).toList()
+                        candidate.allocatedPowerKw().signum() > 0).toList(), baselinePoints
         );
     }
 
