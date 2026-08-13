@@ -83,6 +83,7 @@ public class AutomationRepository {
                 WHERE run.organization_id = :organizationId AND run.vpp_id = :vppId
                   AND run.approval_mode = 'REQUIRE_OPERATOR'
                   AND dispatch.status = 'SCHEDULED'
+                  AND dispatch.scheduled_start_at > CURRENT_TIMESTAMP
                 ORDER BY run.scheduled_start_at, run.evaluated_at
                 """)
                 .param("organizationId", organizationId)
@@ -105,11 +106,46 @@ public class AutomationRepository {
                       AND run.dispatch_id = :dispatchId
                       AND run.approval_mode = 'REQUIRE_OPERATOR'
                       AND dispatch.status = 'SCHEDULED'
+                      AND dispatch.scheduled_start_at > CURRENT_TIMESTAMP
                 )
                 """)
                 .param("organizationId", organizationId)
                 .param("dispatchId", dispatchId)
                 .query(Boolean.class).single();
+    }
+
+    public boolean cancelPendingCandidate(UUID organizationId, UUID dispatchId) {
+        return jdbcClient.sql("""
+                UPDATE dispatches dispatch
+                SET status = 'CANCELLED', version = version + 1
+                WHERE dispatch.organization_id = :organizationId
+                  AND dispatch.id = :dispatchId AND dispatch.status = 'SCHEDULED'
+                  AND EXISTS (
+                      SELECT 1 FROM automation_runs run
+                      WHERE run.organization_id = dispatch.organization_id
+                        AND run.dispatch_id = dispatch.id
+                        AND run.approval_mode = 'REQUIRE_OPERATOR'
+                  )
+                """)
+                .param("organizationId", organizationId)
+                .param("dispatchId", dispatchId)
+                .update() == 1;
+    }
+
+    public void expirePendingCandidates(Instant now) {
+        jdbcClient.sql("""
+                UPDATE dispatches dispatch
+                SET status = 'CANCELLED', version = version + 1
+                WHERE dispatch.status = 'SCHEDULED'
+                  AND dispatch.scheduled_start_at <= :now
+                  AND EXISTS (
+                      SELECT 1 FROM automation_runs run
+                      WHERE run.organization_id = dispatch.organization_id
+                        AND run.dispatch_id = dispatch.id
+                        AND run.approval_mode = 'REQUIRE_OPERATOR'
+                  )
+                """)
+                .param("now", Timestamp.from(now)).update();
     }
 
     public record CandidateReference(

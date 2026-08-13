@@ -28,6 +28,7 @@ public class AutomationEvaluationJob {
 
     @Scheduled(fixedDelayString = "${voltweave.automation.evaluation-delay:1m}")
     public void evaluate() {
+        automationService.expireCandidates();
         for (var policy : portfolioClient.activeAutomationPolicies()) {
             try {
                 if (!"PEAK_LIMIT".equals(policy.triggerType())) {

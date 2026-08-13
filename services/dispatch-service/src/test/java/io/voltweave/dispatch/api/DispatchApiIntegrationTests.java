@@ -45,7 +45,7 @@ import io.voltweave.dispatch.application.AutomationApplicationService;
 import io.voltweave.dispatch.application.model.AutomationPlan;
 import io.voltweave.dispatch.application.model.AutomationPolicy;
 
-@SpringBootTest
+@SpringBootTest(properties = "voltweave.automation.evaluation-delay=1h")
 @AutoConfigureMockMvc
 @Import(PostgresTestConfiguration.class)
 @Transactional
@@ -199,6 +199,20 @@ class DispatchApiIntegrationTests {
         assertThat(jdbcClient.sql("SELECT status FROM dispatches WHERE id = :id")
                 .param("id", dispatch.id()).query(String.class).single())
                 .isEqualTo("PREPARING");
+
+        var rejected = automationService.createCandidate(new AutomationPolicy(
+                UUID.randomUUID(), ORGANIZATION_ID, VPP_ID, "PEAK_LIMIT",
+                "REQUIRE_OPERATOR", new BigDecimal("50"), null, 10,
+                new BigDecimal("10"), 30, 3
+        ), new AutomationPlan(
+                startAt, Duration.ofMinutes(30), PREVIEW_ID, true
+        )).orElseThrow();
+        mockMvc.perform(post("/api/v1/automation-candidates/{id}/reject", rejected.id())
+                        .with(operator("operator")))
+                .andExpect(status().isNoContent());
+        assertThat(jdbcClient.sql("SELECT status FROM dispatches WHERE id = :id")
+                .param("id", rejected.id()).query(String.class).single())
+                .isEqualTo("CANCELLED");
     }
 
     @Test

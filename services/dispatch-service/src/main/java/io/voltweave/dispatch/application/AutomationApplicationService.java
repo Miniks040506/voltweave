@@ -86,6 +86,16 @@ public class AutomationApplicationService {
         return repository.isPendingCandidate(organizationId, dispatchId);
     }
 
+    @Transactional
+    public boolean rejectCandidate(UUID organizationId, UUID dispatchId) {
+        return repository.cancelPendingCandidate(organizationId, dispatchId);
+    }
+
+    @Transactional
+    public void expireCandidates() {
+        repository.expirePendingCandidates(clock.instant());
+    }
+
     private static UUID correlationId(AutomationPolicy policy, AutomationPlan plan) {
         return UUID.nameUUIDFromBytes((policy.id() + ":" + policy.version() + ":"
                 + plan.scheduledStartAt()).getBytes(StandardCharsets.UTF_8));

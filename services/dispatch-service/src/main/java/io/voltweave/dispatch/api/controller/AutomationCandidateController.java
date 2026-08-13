@@ -77,4 +77,22 @@ public class AutomationCandidateController {
                 UUID.fromString(request.getAttribute(CorrelationIdFilter.ATTRIBUTE).toString())
         ).stream().map(DeviceCommandResponse::from).toList());
     }
+
+    @PostMapping("/{dispatchId}/reject")
+    public ResponseEntity<Void> reject(
+            @PathVariable UUID dispatchId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        var dispatch = dispatchService.find(dispatchId).orElse(null);
+        if (dispatch == null) {
+            return ResponseEntity.notFound().build();
+        }
+        UUID organizationId = accessClient.requireVppAccess(jwt.getSubject(), dispatch.vppId());
+        if (!organizationId.equals(dispatch.organizationId())) {
+            throw new AccessDeniedException("Automation candidate access denied");
+        }
+        return automationService.rejectCandidate(organizationId, dispatchId)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
 }
