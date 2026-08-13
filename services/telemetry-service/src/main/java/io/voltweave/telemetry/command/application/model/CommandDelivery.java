@@ -12,6 +12,7 @@ public record CommandDelivery(
         String mqttTopic,
         String mqttPayload,
         Instant validFrom,
+        Instant acknowledgementDeadlineAt,
         Instant expiresAt,
         int attempts
 ) {

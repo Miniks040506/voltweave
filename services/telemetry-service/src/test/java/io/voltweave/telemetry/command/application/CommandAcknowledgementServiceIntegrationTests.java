@@ -44,11 +44,13 @@ class CommandAcknowledgementServiceIntegrationTests {
                 INSERT INTO command_deliveries (
                     command_id, organization_id, dispatch_id, site_id, device_id,
                     correlation_id, requested_event_id, mqtt_topic, mqtt_payload,
-                    valid_from, expires_at, received_at, status, published_at
+                    valid_from, acknowledgement_deadline_at, expires_at,
+                    received_at, status, published_at
                 ) VALUES (
                     :commandId, :organizationId, :dispatchId, :siteId, :deviceId,
                     :correlationId, :requestedEventId, 'command', '{}'::jsonb,
-                    now() - interval '1 minute', now() + interval '5 minutes',
+                    now() - interval '1 minute', now() + interval '30 seconds',
+                    now() + interval '5 minutes',
                     now(), 'PUBLISHED', now()
                 )
                 """)

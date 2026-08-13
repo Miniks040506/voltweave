@@ -50,11 +50,11 @@ public class CommandGatewayRepository {
                 INSERT INTO command_deliveries (
                     command_id, organization_id, dispatch_id, site_id, device_id,
                     correlation_id, requested_event_id, mqtt_topic, mqtt_payload,
-                    valid_from, expires_at, received_at
+                    valid_from, acknowledgement_deadline_at, expires_at, received_at
                 ) VALUES (
                     :commandId, :organizationId, :dispatchId, :siteId, :deviceId,
                     :correlationId, :requestedEventId, :mqttTopic, CAST(:mqttPayload AS JSONB),
-                    :validFrom, :expiresAt, :receivedAt
+                    :validFrom, :acknowledgementDeadlineAt, :expiresAt, :receivedAt
                 ) ON CONFLICT (command_id) DO NOTHING
                 """)
                 .param("commandId", command.commandId())
@@ -67,6 +67,7 @@ public class CommandGatewayRepository {
                 .param("mqttTopic", topic)
                 .param("mqttPayload", mqttPayload)
                 .param("validFrom", timestamp(command.validFrom()))
+                .param("acknowledgementDeadlineAt", timestamp(command.acknowledgementDeadlineAt()))
                 .param("expiresAt", timestamp(command.expiresAt()))
                 .param("receivedAt", timestamp(receivedAt))
                 .update();
@@ -76,8 +77,10 @@ public class CommandGatewayRepository {
         return jdbcClient.sql("""
                 SELECT command_id, organization_id, dispatch_id, site_id, device_id,
                        mqtt_topic, mqtt_payload::text, valid_from, expires_at, attempts
+                       , acknowledgement_deadline_at
                 FROM command_deliveries
-                WHERE status = 'PENDING' AND valid_from <= :now AND expires_at > :now
+                WHERE status IN ('PENDING', 'PUBLISHED')
+                  AND valid_from <= :now AND acknowledgement_deadline_at > :now
                   AND next_attempt_at <= :now
                 ORDER BY valid_from, command_id
                 LIMIT :limit FOR UPDATE SKIP LOCKED
@@ -92,18 +95,22 @@ public class CommandGatewayRepository {
                         row.getObject("device_id", UUID.class),
                         row.getString("mqtt_topic"), row.getString("mqtt_payload"),
                         row.getTimestamp("valid_from").toInstant(),
+                        row.getTimestamp("acknowledgement_deadline_at").toInstant(),
                         row.getTimestamp("expires_at").toInstant(), row.getInt("attempts")
                 )).list();
     }
 
-    public void markPublished(UUID commandId, Instant publishedAt) {
+    public void markPublished(UUID commandId, Instant publishedAt, Instant nextAttemptAt) {
         jdbcClient.sql("""
                 UPDATE command_deliveries
-                SET status = 'PUBLISHED', published_at = :publishedAt, last_error = NULL
-                WHERE command_id = :commandId AND status = 'PENDING'
+                SET status = 'PUBLISHED', published_at = COALESCE(published_at, :publishedAt),
+                    attempts = attempts + 1, next_attempt_at = :nextAttemptAt,
+                    last_error = NULL
+                WHERE command_id = :commandId AND status IN ('PENDING', 'PUBLISHED')
                 """)
                 .param("commandId", commandId)
                 .param("publishedAt", timestamp(publishedAt))
+                .param("nextAttemptAt", timestamp(nextAttemptAt))
                 .update();
     }
 

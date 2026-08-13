@@ -44,15 +44,23 @@ public class CommandDeliveryJob {
         for (var command : repository.lockReady(clock.instant(), BATCH_SIZE)) {
             try {
                 mqtt.publishCommand(command.mqttTopic(), command.mqttPayload());
-                repository.markPublished(command.commandId(), clock.instant());
+                repository.markPublished(
+                        command.commandId(), clock.instant(),
+                        clock.instant().plus(retryDelay(command.attempts()), ChronoUnit.SECONDS)
+                );
             } catch (Exception exception) {
-                long delay = Math.min(60, 1L << Math.min(command.attempts(), 6));
                 repository.markFailed(
                         command.commandId(),
-                        clock.instant().plus(delay, ChronoUnit.SECONDS),
+                        clock.instant().plus(
+                                retryDelay(command.attempts()), ChronoUnit.SECONDS
+                        ),
                         exception.getMessage()
                 );
             }
         }
+    }
+
+    private static long retryDelay(int attempts) {
+        return Math.min(30, 1L << Math.min(attempts, 5));
     }
 }

@@ -61,14 +61,16 @@ class CommandRequestedConsumerIntegrationTests {
         assertThat(count("event_inbox")).isEqualTo(1);
         assertThat(count("command_deliveries")).isEqualTo(1);
         var delivery = jdbcClient.sql("""
-                SELECT mqtt_topic, mqtt_payload::text, correlation_id, requested_event_id
+                SELECT mqtt_topic, mqtt_payload::text, correlation_id, requested_event_id,
+                       acknowledgement_deadline_at
                 FROM command_deliveries WHERE command_id = :commandId
                 """)
                 .param("commandId", commandId())
                 .query((row, number) -> new Delivery(
                         row.getString("mqtt_topic"), row.getString("mqtt_payload"),
                         row.getObject("correlation_id", UUID.class),
-                        row.getObject("requested_event_id", UUID.class)
+                        row.getObject("requested_event_id", UUID.class),
+                        row.getTimestamp("acknowledgement_deadline_at").toInstant()
                 )).single();
         assertThat(delivery.topic()).isEqualTo(
                 "voltweave/%s/%s/%s/command".formatted(
@@ -79,6 +81,8 @@ class CommandRequestedConsumerIntegrationTests {
                 .isEqualByComparingTo("-12.500");
         assertThat(delivery.correlationId()).isEqualTo(CORRELATION_ID);
         assertThat(delivery.requestedEventId()).isEqualTo(eventId);
+        assertThat(delivery.acknowledgementDeadlineAt())
+                .isEqualTo(VALID_FROM.plusSeconds(30));
     }
 
     @Test
@@ -126,7 +130,8 @@ class CommandRequestedConsumerIntegrationTests {
             String topic,
             String payload,
             UUID correlationId,
-            UUID requestedEventId
+            UUID requestedEventId,
+            Instant acknowledgementDeadlineAt
     ) {
     }
 }

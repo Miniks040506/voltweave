@@ -35,7 +35,7 @@ class CommandDeliveryJobTests {
         job.publishReady();
 
         verify(mqtt).publishCommand("device/command", "{}");
-        verify(repository).markPublished(COMMAND_ID, NOW);
+        verify(repository).markPublished(COMMAND_ID, NOW, NOW.plusSeconds(1));
     }
 
     @Test
@@ -55,7 +55,7 @@ class CommandDeliveryJobTests {
         return new CommandDelivery(
                 COMMAND_ID, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 UUID.randomUUID(), "device/command", "{}", NOW.minusSeconds(1),
-                NOW.plusSeconds(60), attempts
+                NOW.plusSeconds(30), NOW.plusSeconds(60), attempts
         );
     }
 }
