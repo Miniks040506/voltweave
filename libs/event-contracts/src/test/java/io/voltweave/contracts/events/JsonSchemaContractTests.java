@@ -65,6 +65,12 @@ class JsonSchemaContractTests {
                         "commandId", "dispatchId", "siteId", "deviceId", "status",
                         "appliedPowerKw", "processedAt"
                 );
+        assertThat(requiredFields(schema("dispatch-completed.schema.json")))
+                .containsExactlyInAnyOrder(
+                        "dispatchId", "vppId", "completionStatus", "targetPowerKw",
+                        "deliveredEnergyKwh", "baselineId", "baselineVersion",
+                        "scheduledStartAt", "scheduledEndAt", "completedAt"
+                );
     }
 
     @Test

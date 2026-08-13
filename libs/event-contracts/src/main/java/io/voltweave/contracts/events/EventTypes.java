@@ -5,6 +5,7 @@ public final class EventTypes {
     public static final String TELEMETRY_NORMALIZED = "TelemetryNormalized";
     public static final String COMMAND_REQUESTED = "CommandRequested";
     public static final String COMMAND_ACKNOWLEDGED = "CommandAcknowledged";
+    public static final String DISPATCH_COMPLETED = "DispatchCompleted";
     public static final String ORGANIZATION_MEMBER_ADDED = "OrganizationMemberAdded";
     public static final String DEVICE_PROVISION_REQUESTED = "DeviceProvisionRequested";
     public static final String DEVICE_CREDENTIAL_REVOKED = "DeviceCredentialRevoked";

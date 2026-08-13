@@ -3,11 +3,14 @@ package io.voltweave.contracts.events;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
 import io.voltweave.contracts.events.audit.v1.AuditRecordedPayloadV1;
+import io.voltweave.contracts.events.dispatch.v1.DispatchCompletedPayloadV1;
 import io.voltweave.contracts.events.portfolio.v1.PortfolioChangeTypeV1;
 import io.voltweave.contracts.events.portfolio.v1.PortfolioLifecyclePayloadV1;
 import io.voltweave.contracts.events.portfolio.v1.PortfolioResourceTypeV1;
@@ -39,5 +42,17 @@ class PayloadContractTests {
                 UUID.randomUUID(), "USER", " ", "ACTION", "DEVICE", UUID.randomUUID()
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("actorId");
+    }
+
+    @Test
+    void acceptsOnlyFinalDispatchStatuses() {
+        Instant now = Instant.parse("2026-08-13T02:00:00Z");
+
+        assertThatThrownBy(() -> new DispatchCompletedPayloadV1(
+                UUID.randomUUID(), UUID.randomUUID(), "ACTIVE",
+                BigDecimal.TEN, BigDecimal.ONE, UUID.randomUUID(), 1,
+                now.minusSeconds(300), now, now
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("completionStatus");
     }
 }

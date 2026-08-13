@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voltweave.io/schemas/events/v1/dispatch-completed.schema.json",
+  "title": "DispatchCompletedPayloadV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "dispatchId", "vppId", "completionStatus", "targetPowerKw",
+    "deliveredEnergyKwh", "baselineId", "baselineVersion",
+    "scheduledStartAt", "scheduledEndAt", "completedAt"
+  ],
+  "properties": {
+    "dispatchId": { "type": "string", "format": "uuid" },
+    "vppId": { "type": "string", "format": "uuid" },
+    "completionStatus": { "type": "string", "enum": ["COMPLETED", "PARTIALLY_COMPLETED"] },
+    "targetPowerKw": { "type": "number", "exclusiveMinimum": 0 },
+    "deliveredEnergyKwh": { "type": "number", "minimum": 0 },
+    "baselineId": { "type": "string", "format": "uuid" },
+    "baselineVersion": { "type": "integer", "minimum": 1 },
+    "scheduledStartAt": { "type": "string", "format": "date-time" },
+    "scheduledEndAt": { "type": "string", "format": "date-time" },
+    "completedAt": { "type": "string", "format": "date-time" }
+  }
+}
