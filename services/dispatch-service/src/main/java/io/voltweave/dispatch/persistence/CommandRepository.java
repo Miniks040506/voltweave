@@ -107,6 +107,59 @@ public class CommandRepository {
                 .update();
     }
 
+    public List<StalledDispatch> lockStalledDispatches(Instant now, int limit) {
+        return jdbcClient.sql("""
+                SELECT d.organization_id, d.id
+                FROM dispatches d
+                WHERE d.status = 'PREPARING'
+                  AND EXISTS (
+                    SELECT 1 FROM device_commands c
+                    WHERE c.dispatch_id = d.id
+                      AND (
+                        c.status = 'REJECTED'
+                        OR (c.status = 'REQUESTED' AND c.acknowledgement_deadline_at <= :now)
+                      )
+                  )
+                ORDER BY d.scheduled_start_at, d.id
+                LIMIT :limit FOR UPDATE SKIP LOCKED
+                """)
+                .param("now", timestamp(now))
+                .param("limit", limit)
+                .query((row, rowNumber) -> new StalledDispatch(
+                        row.getObject("organization_id", UUID.class),
+                        row.getObject("id", UUID.class)
+                )).list();
+    }
+
+    public void timeOutUnacknowledged(UUID dispatchId, Instant now) {
+        jdbcClient.sql("""
+                UPDATE device_commands
+                SET status = 'TIMED_OUT', rejection_reason = 'ACKNOWLEDGEMENT_TIMEOUT',
+                    acknowledged_at = :now, version = version + 1
+                WHERE dispatch_id = :dispatchId AND status = 'REQUESTED'
+                  AND acknowledgement_deadline_at <= :now
+                """)
+                .param("dispatchId", dispatchId)
+                .param("now", timestamp(now))
+                .update();
+    }
+
+    public void failPreparingDispatch(UUID organizationId, UUID dispatchId) {
+        jdbcClient.sql("""
+                UPDATE dispatches SET status = 'FAILED', version = version + 1
+                WHERE organization_id = :organizationId AND id = :dispatchId
+                  AND status = 'PREPARING'
+                  AND EXISTS (
+                    SELECT 1 FROM device_commands
+                    WHERE dispatch_id = :dispatchId
+                      AND status IN ('REJECTED', 'TIMED_OUT')
+                  )
+                """)
+                .param("organizationId", organizationId)
+                .param("dispatchId", dispatchId)
+                .update();
+    }
+
     public void insert(
             DeviceCommand command,
             UUID eventId,
@@ -179,6 +232,9 @@ public class CommandRepository {
 
     private static Timestamp timestamp(Instant value) {
         return Timestamp.from(value);
+    }
+
+    public record StalledDispatch(UUID organizationId, UUID dispatchId) {
     }
 
     private DeviceCommand mapCommand(java.sql.ResultSet row, int rowNumber)

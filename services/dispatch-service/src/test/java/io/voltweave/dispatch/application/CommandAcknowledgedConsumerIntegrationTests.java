@@ -126,10 +126,11 @@ class CommandAcknowledgedConsumerIntegrationTests {
                 INSERT INTO device_commands (
                     id, organization_id, dispatch_id, site_id, device_id,
                     command_type, target_power_kw, valid_from, expires_at,
-                    status, requested_at
+                    acknowledgement_deadline_at, status, requested_at
                 ) VALUES (
                     :id, :organizationId, :dispatchId, :siteId, :deviceId,
-                    'SET_POWER', -5, :validFrom, :expiresAt, 'REQUESTED', :requestedAt
+                    'SET_POWER', -5, :validFrom, :expiresAt,
+                    :acknowledgementDeadlineAt, 'REQUESTED', :requestedAt
                 )
                 """)
                 .param("id", commandId)
@@ -139,6 +140,7 @@ class CommandAcknowledgedConsumerIntegrationTests {
                 .param("deviceId", deviceId)
                 .param("validFrom", java.sql.Timestamp.from(NOW))
                 .param("expiresAt", java.sql.Timestamp.from(NOW.plusSeconds(900)))
+                .param("acknowledgementDeadlineAt", java.sql.Timestamp.from(NOW.plusSeconds(30)))
                 .param("requestedAt", java.sql.Timestamp.from(NOW.minusSeconds(60)))
                 .update();
     }
