@@ -22,13 +22,13 @@ public class ForecastApiExceptionHandler {
     @ExceptionHandler({IllegalArgumentException.class, MethodArgumentNotValidException.class})
     ResponseEntity<ProblemDetail> badRequest(HttpServletRequest request) {
         return problem(request, HttpStatus.BAD_REQUEST,
-                "Invalid forecast request", "Forecast request is invalid.");
+                "Invalid request", "Request is invalid.");
     }
 
     @ExceptionHandler(IllegalStateException.class)
     ResponseEntity<ProblemDetail> unavailable(HttpServletRequest request) {
         return problem(request, HttpStatus.UNPROCESSABLE_CONTENT,
-                "Forecast unavailable", "Required training data is unavailable.");
+                "Resource unavailable", "Required input data is unavailable.");
     }
 
     private ResponseEntity<ProblemDetail> problem(

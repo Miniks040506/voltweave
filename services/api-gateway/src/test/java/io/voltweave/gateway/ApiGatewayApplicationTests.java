@@ -17,7 +17,7 @@ class ApiGatewayApplicationTests {
         assertThat(gatewayProperties.getRoutes())
                 .extracting("id")
                 .containsExactly(
-                        "telemetry-public", "intelligence-forecast",
+                        "telemetry-public", "intelligence-forecast", "intelligence-flexibility",
                         "portfolio-organizations", "portfolio-sites", "portfolio-devices",
                         "portfolio-vpps", "portfolio-audit"
                 );
