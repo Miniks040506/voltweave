@@ -13,7 +13,9 @@ public record DispatchState(DispatchStatus status) {
             DispatchStatus.ACTIVE, EnumSet.of(
                     DispatchStatus.REBALANCING, DispatchStatus.COMPLETING, DispatchStatus.FAILED
             ),
-            DispatchStatus.REBALANCING, EnumSet.of(DispatchStatus.ACTIVE, DispatchStatus.FAILED),
+            DispatchStatus.REBALANCING, EnumSet.of(
+                    DispatchStatus.ACTIVE, DispatchStatus.COMPLETING, DispatchStatus.FAILED
+            ),
             DispatchStatus.COMPLETING, EnumSet.of(
                     DispatchStatus.COMPLETED, DispatchStatus.PARTIALLY_COMPLETED
             )
