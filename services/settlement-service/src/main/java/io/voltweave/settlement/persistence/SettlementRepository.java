@@ -2,6 +2,8 @@ package io.voltweave.settlement.persistence;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -104,6 +106,76 @@ public class SettlementRepository {
                     .param("achievementPercent", line.achievementPercent())
                     .update();
         }
+    }
+
+    public Optional<Settlement> findById(UUID settlementId) {
+        return find("id", settlementId);
+    }
+
+    public Optional<Settlement> findByDispatchId(UUID dispatchId) {
+        return find("dispatch_id", dispatchId);
+    }
+
+    private Optional<Settlement> find(String column, UUID value) {
+        return jdbcClient.sql("""
+                SELECT * FROM settlements WHERE %s = :value
+                """.formatted(column))
+                .param("value", value)
+                .query((row, rowNumber) -> new Settlement(
+                        row.getObject("id", UUID.class),
+                        row.getObject("organization_id", UUID.class),
+                        row.getObject("dispatch_id", UUID.class),
+                        row.getObject("vpp_id", UUID.class),
+                        row.getString("completion_status"),
+                        row.getBigDecimal("target_power_kw"),
+                        row.getTimestamp("scheduled_start_at").toInstant(),
+                        row.getTimestamp("scheduled_end_at").toInstant(),
+                        row.getTimestamp("baseline_frozen_at").toInstant(),
+                        row.getObject("baseline_id", UUID.class),
+                        row.getLong("baseline_version"),
+                        row.getString("baseline_model_name"),
+                        row.getString("baseline_model_version"),
+                        row.getBigDecimal("expected_energy_kwh"),
+                        row.getBigDecimal("delivered_energy_kwh"),
+                        row.getBigDecimal("achievement_percent"),
+                        row.getString("status"),
+                        row.getTimestamp("calculated_at").toInstant(),
+                        baselinePoints(row.getObject("id", UUID.class)),
+                        lines(row.getObject("id", UUID.class))
+                )).optional();
+    }
+
+    private List<Settlement.BaselinePoint> baselinePoints(UUID settlementId) {
+        return jdbcClient.sql("""
+                SELECT forecast_at, baseline_grid_import_kw
+                FROM settlement_baseline_points
+                WHERE settlement_id = :settlementId ORDER BY forecast_at
+                """)
+                .param("settlementId", settlementId)
+                .query((row, rowNumber) -> new Settlement.BaselinePoint(
+                        row.getTimestamp("forecast_at").toInstant(),
+                        row.getBigDecimal("baseline_grid_import_kw")
+                )).list();
+    }
+
+    private List<Settlement.Line> lines(UUID settlementId) {
+        return jdbcClient.sql("""
+                SELECT site_id, participant_id, participant_type,
+                       requested_power_kw, expected_energy_kwh,
+                       delivered_energy_kwh, achievement_percent
+                FROM settlement_lines
+                WHERE settlement_id = :settlementId ORDER BY site_id, participant_id
+                """)
+                .param("settlementId", settlementId)
+                .query((row, rowNumber) -> new Settlement.Line(
+                        row.getObject("site_id", UUID.class),
+                        row.getObject("participant_id", UUID.class),
+                        row.getString("participant_type"),
+                        row.getBigDecimal("requested_power_kw"),
+                        row.getBigDecimal("expected_energy_kwh"),
+                        row.getBigDecimal("delivered_energy_kwh"),
+                        row.getBigDecimal("achievement_percent")
+                )).list();
     }
 
     private static Timestamp timestamp(Instant value) {

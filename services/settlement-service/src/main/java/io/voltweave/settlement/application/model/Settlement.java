@@ -22,6 +22,7 @@ public record Settlement(
         BigDecimal expectedEnergyKwh,
         BigDecimal deliveredEnergyKwh,
         BigDecimal achievementPercent,
+        String status,
         Instant calculatedAt,
         List<BaselinePoint> baselinePoints,
         List<Line> lines

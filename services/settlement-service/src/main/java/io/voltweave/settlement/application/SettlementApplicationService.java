@@ -67,7 +67,8 @@ public class SettlementApplicationService {
                 input.completionStatus(), input.targetPowerKw(), input.scheduledStartAt(),
                 input.scheduledEndAt(), input.frozenAt(), input.baselineId(),
                 input.baselineVersion(), input.baselineModelName(), input.baselineModelVersion(),
-                expected, delivered, percent(delivered, expected), completion.completedAt(),
+                expected, delivered, percent(delivered, expected), "CALCULATED",
+                completion.completedAt(),
                 baselinePoints, lines
         ));
     }
