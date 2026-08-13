@@ -191,6 +191,12 @@ public class VppApplicationService {
         return capacityRepository.calculate(vpp.organizationId(), vpp.id());
     }
 
+    @Transactional(readOnly = true)
+    public AutomationPolicy currentPolicy(UUID organizationId, UUID vppId) {
+        return policyRepository.findCurrent(organizationId, vppId)
+                .orElseThrow(() -> new VppNotFoundException(vppId));
+    }
+
     private VirtualPowerPlant requireVpp(UUID vppId, String subjectId) {
         return vppRepository.findByIdForSubject(vppId, subjectId)
                 .orElseThrow(() -> new VppNotFoundException(vppId));

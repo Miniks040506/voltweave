@@ -24,6 +24,18 @@ public class PortfolioAccessClient {
         return response.organizationId();
     }
 
+    public RecoveryPolicy recoveryPolicy(UUID organizationId, UUID vppId) {
+        var response = restClient.get().uri(builder -> builder
+                        .path("/internal/v1/vpps/{vppId}/automation-policy")
+                        .queryParam("organizationId", organizationId)
+                        .build(vppId))
+                .retrieve().body(RecoveryPolicy.class);
+        if (response == null) {
+            throw new IllegalStateException("VPP recovery policy is unavailable");
+        }
+        return response;
+    }
+
     private record AccessCheckRequest(String subjectId, String resourceType, UUID resourceId) {
     }
 
@@ -31,6 +43,14 @@ public class PortfolioAccessClient {
             boolean allowed,
             UUID organizationId,
             String organizationRole
+    ) {
+    }
+
+    public record RecoveryPolicy(
+            int reserveMarginPercent,
+            int underDeliveryTolerancePercent,
+            int underDeliveryGraceSeconds,
+            int rebalanceCooldownSeconds
     ) {
     }
 }
