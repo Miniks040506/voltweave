@@ -1,6 +1,10 @@
 package io.voltweave.dispatch.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -11,9 +15,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.voltweave.contracts.events.EventTopics;
@@ -29,6 +35,7 @@ import tools.jackson.databind.ObjectMapper;
         "voltweave.completion.enabled=false"
 })
 @Import(PostgresTestConfiguration.class)
+@AutoConfigureMockMvc
 @Transactional
 class DispatchCompletionIntegrationTests {
     private static final UUID ORGANIZATION_ID = UUID.randomUUID();
@@ -45,6 +52,9 @@ class DispatchCompletionIntegrationTests {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private MockMvc mockMvc;
+
     @MockitoBean
     private PortfolioAccessClient portfolioClient;
 
@@ -58,7 +68,7 @@ class DispatchCompletionIntegrationTests {
         service.complete(dispatchId, END.plusSeconds(1));
         service.complete(dispatchId, END.plusSeconds(2));
 
-        assertThat(status(dispatchId)).isEqualTo("PARTIALLY_COMPLETED");
+        assertThat(dispatchStatus(dispatchId)).isEqualTo("PARTIALLY_COMPLETED");
         assertThat(count("event_outbox")).isEqualTo(1);
         JsonNode event = objectMapper.readTree(jdbcClient.sql("""
                 SELECT payload::text FROM event_outbox WHERE partition_key = :key
@@ -78,8 +88,29 @@ class DispatchCompletionIntegrationTests {
 
         service.complete(dispatchId, END);
 
-        assertThat(status(dispatchId)).isEqualTo("COMPLETED");
+        assertThat(dispatchStatus(dispatchId)).isEqualTo("COMPLETED");
         assertThat(count("event_outbox")).isEqualTo(1);
+    }
+
+    @Test
+    void exposesFrozenInputOnlyToTheInternalClient() throws Exception {
+        UUID dispatchId = seedDispatch("ACTIVE", new BigDecimal("9.500"));
+        service.complete(dispatchId, END);
+        String path = "/internal/v1/dispatches/" + dispatchId + "/settlement-input";
+
+        mockMvc.perform(get(path).with(jwt().jwt(token -> token
+                        .subject("settlement-service")
+                        .claim("azp", "voltweave-internal"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.organizationId").value(ORGANIZATION_ID.toString()))
+                .andExpect(jsonPath("$.baselineVersion").value(2))
+                .andExpect(jsonPath("$.baselinePoints.length()").value(1))
+                .andExpect(jsonPath("$.participants[0].deliveredEnergyKwh").value(9.5));
+
+        mockMvc.perform(get(path).with(jwt().jwt(token -> token
+                        .subject("operator")
+                        .claim("azp", "voltweave-web"))))
+                .andExpect(status().isForbidden());
     }
 
     private UUID seedDispatch(String status, BigDecimal deliveredEnergy) {
@@ -169,7 +200,7 @@ class DispatchCompletionIntegrationTests {
                 .update();
     }
 
-    private String status(UUID dispatchId) {
+    private String dispatchStatus(UUID dispatchId) {
         return jdbcClient.sql("SELECT status FROM dispatches WHERE id = :id")
                 .param("id", dispatchId).query(String.class).single();
     }
