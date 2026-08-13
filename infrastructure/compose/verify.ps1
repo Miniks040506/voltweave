@@ -131,6 +131,10 @@ if ($LASTEXITCODE -ne 0) {
 }
 Assert-Equal "Telemetry MQTT topic scope" `
   (($mqttRoleResult -join "`n") -match "voltweave/\+/\+/\+/telemetry") $true
+Assert-Equal "Telemetry MQTT command scope" `
+  (($mqttRoleResult -join "`n") -match "voltweave/\+/\+/\+/command") $true
+Assert-Equal "Telemetry MQTT acknowledgement scope" `
+  (($mqttRoleResult -join "`n") -match "voltweave/\+/\+/\+/ack") $true
 
 $expectedOwners = @(
   "dispatch_db:dispatch_app"
