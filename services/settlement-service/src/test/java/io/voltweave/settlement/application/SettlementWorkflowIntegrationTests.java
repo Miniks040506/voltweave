@@ -2,6 +2,10 @@ package io.voltweave.settlement.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -12,9 +16,12 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.voltweave.contracts.events.EventTopics;
@@ -26,10 +33,12 @@ import io.voltweave.settlement.access.DispatchSettlementClient;
 import io.voltweave.settlement.access.DispatchSettlementClient.BaselinePoint;
 import io.voltweave.settlement.access.DispatchSettlementClient.Participant;
 import io.voltweave.settlement.access.DispatchSettlementClient.SettlementInput;
+import io.voltweave.settlement.access.PortfolioAccessClient;
 import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest(properties = "spring.kafka.listener.auto-startup=false")
 @Import(PostgresTestConfiguration.class)
+@AutoConfigureMockMvc
 @Transactional
 class SettlementWorkflowIntegrationTests {
     private static final UUID ORGANIZATION_ID = UUID.randomUUID();
@@ -47,8 +56,14 @@ class SettlementWorkflowIntegrationTests {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private MockMvc mockMvc;
+
     @MockitoBean
     private DispatchSettlementClient dispatchClient;
+
+    @MockitoBean
+    private PortfolioAccessClient portfolioAccessClient;
 
     @Test
     void copiesAndCalculatesSettlementExactlyOnceWhenKafkaReplays() throws Exception {
@@ -68,6 +83,34 @@ class SettlementWorkflowIntegrationTests {
                 .isEqualByComparingTo("9.500000");
         assertThat(decimal("achievement_percent", "settlements"))
                 .isEqualByComparingTo("95.000");
+    }
+
+    @Test
+    void servesBothReadRoutesAndEnforcesVppOwnership() throws Exception {
+        when(dispatchClient.input(DISPATCH_ID)).thenReturn(input());
+        consumer.consume(completionRecord());
+        UUID settlementId = jdbcClient.sql("SELECT id FROM settlements")
+                .query(UUID.class).single();
+        when(portfolioAccessClient.requireVppAccess("operator", VPP_ID))
+                .thenReturn(ORGANIZATION_ID);
+
+        mockMvc.perform(get("/api/v1/settlements/{id}", settlementId)
+                        .with(operatorJwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dispatchId").value(DISPATCH_ID.toString()))
+                .andExpect(jsonPath("$.lines.length()").value(2));
+        mockMvc.perform(get("/api/v1/dispatches/{id}/settlements", DISPATCH_ID)
+                        .with(operatorJwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(settlementId.toString()));
+
+        when(portfolioAccessClient.requireVppAccess("operator", VPP_ID))
+                .thenReturn(UUID.randomUUID());
+        mockMvc.perform(get("/api/v1/settlements/{id}", settlementId)
+                        .with(operatorJwt()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/settlements/{id}", settlementId))
+                .andExpect(status().isUnauthorized());
     }
 
     private ConsumerRecord<String, String> completionRecord() throws Exception {
@@ -115,5 +158,10 @@ class SettlementWorkflowIntegrationTests {
     private BigDecimal decimal(String column, String table) {
         return jdbcClient.sql("SELECT " + column + " FROM " + table)
                 .query(BigDecimal.class).single();
+    }
+
+    private static org.springframework.test.web.servlet.request.RequestPostProcessor operatorJwt() {
+        return jwt().jwt(token -> token.subject("operator"))
+                .authorities(new SimpleGrantedAuthority("ROLE_VPP_OPERATOR"));
     }
 }
