@@ -18,8 +18,9 @@ class ApiGatewayApplicationTests {
                 .extracting("id")
                 .containsExactly(
                         "telemetry-public", "intelligence-forecast", "intelligence-flexibility",
-                        "intelligence-optimization", "dispatch-public", "portfolio-organizations",
-                        "portfolio-sites", "portfolio-devices", "portfolio-vpps", "portfolio-audit"
+                        "intelligence-optimization", "settlement-public", "dispatch-public",
+                        "portfolio-organizations", "portfolio-sites", "portfolio-devices",
+                        "portfolio-vpps", "portfolio-audit"
                 );
     }
 }
