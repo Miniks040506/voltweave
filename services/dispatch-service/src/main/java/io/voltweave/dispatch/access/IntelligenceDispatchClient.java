@@ -83,7 +83,8 @@ public class IntelligenceDispatchClient {
                             "/internal/v1/vpps/{vppId}/automation-plans", policy.vppId()
                     )
                     .body(new AutomationPlanRequest(
-                            policy.organizationId(), policy.peakImportLimitKw(),
+                            policy.organizationId(), policy.triggerType(),
+                            policy.peakImportLimitKw(), policy.priceThreshold(),
                             policy.maxDispatchPowerKw(), policy.maxDispatchDurationMinutes(),
                             BigDecimal.valueOf(policy.reserveMarginPercent())
                     ))
@@ -143,7 +144,9 @@ public class IntelligenceDispatchClient {
 
     private record AutomationPlanRequest(
             UUID organizationId,
+            String triggerType,
             BigDecimal peakImportLimitKw,
+            BigDecimal priceThreshold,
             BigDecimal maxDispatchPowerKw,
             int maxDispatchDurationMinutes,
             BigDecimal reserveMarginPercent

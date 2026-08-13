@@ -28,10 +28,19 @@ public class InternalAutomationPlanController {
             @PathVariable UUID vppId,
             @Valid @RequestBody PlanAutomationRequest request
     ) {
-        return ResponseEntity.of(planningService.peakLimitPlan(
-                request.organizationId(), vppId, request.peakImportLimitKw(),
-                request.maxDispatchPowerKw(), request.maxDispatchDurationMinutes(),
-                request.reserveMarginPercent()
-        ).map(AutomationPlanResponse::from));
+        var plan = switch (request.triggerType()) {
+            case "PEAK_LIMIT" -> planningService.peakLimitPlan(
+                    request.organizationId(), vppId, request.peakImportLimitKw(),
+                    request.maxDispatchPowerKw(), request.maxDispatchDurationMinutes(),
+                    request.reserveMarginPercent()
+            );
+            case "PRICE_THRESHOLD" -> planningService.priceThresholdPlan(
+                    request.organizationId(), vppId, request.priceThreshold(),
+                    request.maxDispatchPowerKw(), request.maxDispatchDurationMinutes(),
+                    request.reserveMarginPercent()
+            );
+            default -> throw new IllegalArgumentException("Unsupported automation trigger");
+        };
+        return ResponseEntity.of(plan.map(AutomationPlanResponse::from));
     }
 }

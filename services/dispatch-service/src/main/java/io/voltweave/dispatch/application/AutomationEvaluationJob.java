@@ -31,7 +31,7 @@ public class AutomationEvaluationJob {
         automationService.expireCandidates();
         for (var policy : portfolioClient.activeAutomationPolicies()) {
             try {
-                if (!"PEAK_LIMIT".equals(policy.triggerType())) {
+                if ("MANUAL".equals(policy.triggerType())) {
                     continue;
                 }
                 intelligenceClient.automationPlan(policy)
