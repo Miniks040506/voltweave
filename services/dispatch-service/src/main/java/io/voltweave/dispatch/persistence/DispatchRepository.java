@@ -154,35 +154,41 @@ public class DispatchRepository {
                 """)
                 .param("organizationId", organizationId)
                 .param("dispatchId", dispatchId)
-                .query((row, rowNumber) -> new DispatchHeader(
-                        row.getObject("id", UUID.class), row.getObject("organization_id", UUID.class),
-                        row.getObject("vpp_id", UUID.class),
-                        row.getObject("optimization_preview_id", UUID.class),
-                        row.getLong("optimization_preview_version"), row.getString("type"),
-                        row.getBigDecimal("target_power_kw"), row.getBigDecimal("required_power_kw"),
-                        row.getBigDecimal("planned_power_kw"),
-                        row.getTimestamp("scheduled_start_at").toInstant(),
-                        row.getTimestamp("scheduled_end_at").toInstant(),
-                        DispatchStatus.valueOf(row.getString("status")), row.getString("created_by"),
-                        row.getTimestamp("created_at").toInstant(), row.getLong("version")
-                )).optional().map(this::loadDetails);
+                .query(this::mapHeader).optional().map(this::loadDetails);
+    }
+
+    public List<Dispatch> findAll(UUID organizationId, UUID vppId) {
+        return jdbcClient.sql("""
+                SELECT * FROM dispatches
+                WHERE organization_id = :organizationId AND vpp_id = :vppId
+                ORDER BY created_at DESC, id
+                """)
+                .param("organizationId", organizationId)
+                .param("vppId", vppId)
+                .query(this::mapHeader).list().stream()
+                .map(this::loadDetails).toList();
     }
 
     public Optional<Dispatch> findById(UUID dispatchId) {
         return jdbcClient.sql("SELECT * FROM dispatches WHERE id = :dispatchId")
                 .param("dispatchId", dispatchId)
-                .query((row, rowNumber) -> new DispatchHeader(
-                        row.getObject("id", UUID.class), row.getObject("organization_id", UUID.class),
-                        row.getObject("vpp_id", UUID.class),
-                        row.getObject("optimization_preview_id", UUID.class),
-                        row.getLong("optimization_preview_version"), row.getString("type"),
-                        row.getBigDecimal("target_power_kw"), row.getBigDecimal("required_power_kw"),
-                        row.getBigDecimal("planned_power_kw"),
-                        row.getTimestamp("scheduled_start_at").toInstant(),
-                        row.getTimestamp("scheduled_end_at").toInstant(),
-                        DispatchStatus.valueOf(row.getString("status")), row.getString("created_by"),
-                        row.getTimestamp("created_at").toInstant(), row.getLong("version")
-                )).optional().map(this::loadDetails);
+                .query(this::mapHeader).optional().map(this::loadDetails);
+    }
+
+    private DispatchHeader mapHeader(java.sql.ResultSet row, int rowNumber)
+            throws java.sql.SQLException {
+        return new DispatchHeader(
+                row.getObject("id", UUID.class), row.getObject("organization_id", UUID.class),
+                row.getObject("vpp_id", UUID.class),
+                row.getObject("optimization_preview_id", UUID.class),
+                row.getLong("optimization_preview_version"), row.getString("type"),
+                row.getBigDecimal("target_power_kw"), row.getBigDecimal("required_power_kw"),
+                row.getBigDecimal("planned_power_kw"),
+                row.getTimestamp("scheduled_start_at").toInstant(),
+                row.getTimestamp("scheduled_end_at").toInstant(),
+                DispatchStatus.valueOf(row.getString("status")), row.getString("created_by"),
+                row.getTimestamp("created_at").toInstant(), row.getLong("version")
+        );
     }
 
     private Dispatch loadDetails(DispatchHeader header) {

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.voltweave.dispatch.access.PortfolioAccessClient;
@@ -82,6 +83,16 @@ public class DispatchController {
         ));
         return ResponseEntity.created(URI.create("/api/v1/dispatches/" + dispatch.id()))
                 .body(DispatchResponse.from(dispatch));
+    }
+
+    @GetMapping
+    public List<DispatchResponse> findAll(
+            @RequestParam UUID vppId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        UUID organizationId = accessClient.requireVppAccess(jwt.getSubject(), vppId);
+        return dispatchService.findAll(organizationId, vppId).stream()
+                .map(DispatchResponse::from).toList();
     }
 
     @GetMapping("/{dispatchId}")

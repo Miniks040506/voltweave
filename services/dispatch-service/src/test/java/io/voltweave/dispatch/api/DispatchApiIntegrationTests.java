@@ -3,6 +3,7 @@ package io.voltweave.dispatch.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -94,6 +95,28 @@ class DispatchApiIntegrationTests {
                 """).param("dispatchId", UUID.fromString(dispatchId)).update())
                 .isInstanceOf(DataAccessException.class)
                 .hasMessageContaining("dispatch execution inputs are immutable");
+    }
+
+    @Test
+    void listsDispatchesForAnAuthorizedVpp() throws Exception {
+        Instant startAt = nextQuarterHour();
+        allow("operator", ORGANIZATION_ID);
+        when(intelligenceClient.input(any(), any(), any(), any(), any()))
+                .thenReturn(dispatchInput(startAt));
+        String firstId = JsonPath.read(
+                create("operator", "history-first", startAt, 30, 201), "$.id"
+        );
+        String secondId = JsonPath.read(
+                create("operator", "history-second", startAt.plusSeconds(900), 30, 201), "$.id"
+        );
+
+        String response = mockMvc.perform(get("/api/v1/dispatches")
+                        .queryParam("vppId", VPP_ID.toString())
+                        .with(operator("operator")))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(JsonPath.<List<String>>read(response, "$[*].id"))
+                .contains(firstId, secondId);
     }
 
     @Test
@@ -285,7 +308,7 @@ class DispatchApiIntegrationTests {
     }
 
     private void allow(String subject, UUID organizationId) {
-        when(accessClient.requireVppAccess(subject, VPP_ID)).thenReturn(organizationId);
+        doReturn(organizationId).when(accessClient).requireVppAccess(subject, VPP_ID);
     }
 
     private static DispatchInput dispatchInput(Instant startAt) {

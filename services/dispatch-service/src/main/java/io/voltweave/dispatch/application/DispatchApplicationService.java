@@ -9,6 +9,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -110,6 +111,11 @@ public class DispatchApplicationService {
     @Transactional(readOnly = true)
     public Optional<Dispatch> find(UUID dispatchId) {
         return repository.findById(dispatchId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Dispatch> findAll(UUID organizationId, UUID vppId) {
+        return repository.findAll(organizationId, vppId);
     }
 
     private void validate(CreateDispatchCommand command) {
