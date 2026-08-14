@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -139,6 +141,49 @@ class SettlementWorkflowIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalAmount").value(0.0))
                 .andExpect(jsonPath("$.entries.length()").value(0));
+    }
+
+    @Test
+    void appendsAnAdjustmentAndReplaysOnlyTheIdenticalRequest() throws Exception {
+        when(dispatchClient.input(DISPATCH_ID)).thenReturn(input());
+        consumer.consume(completionRecord());
+        UUID settlementId = jdbcClient.sql("SELECT id FROM settlements")
+                .query(UUID.class).single();
+        when(portfolioAccessClient.requireVppAccess("operator", VPP_ID))
+                .thenReturn(ORGANIZATION_ID);
+
+        String body = """
+                {"siteId":"%s","amount":1.2500,"reason":"Performance correction"}
+                """.formatted(SITE_ID);
+        String first = mockMvc.perform(post(
+                        "/api/v1/settlements/{id}/adjustments", settlementId
+                ).with(operatorJwt()).header("Idempotency-Key", "adjust-1")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.amount").value(1.25))
+                .andReturn().getResponse().getContentAsString();
+        String adjustmentId = objectMapper.readTree(first).get("id").asText();
+        mockMvc.perform(post(
+                        "/api/v1/settlements/{id}/adjustments", settlementId
+                ).with(operatorJwt()).header("Idempotency-Key", "adjust-1")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(adjustmentId));
+        assertThat(count("api_idempotency")).isEqualTo(1);
+        assertThat(count("reward_ledger_entries")).isEqualTo(2);
+
+        mockMvc.perform(post("/api/v1/settlements/{id}/adjustments", settlementId)
+                        .with(operatorJwt()).header("Idempotency-Key", "adjust-1")
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"siteId":"%s","amount":-0.5000,"reason":"Correction"}
+                                """.formatted(SITE_ID)))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/api/v1/settlements/{id}/adjustments", settlementId)
+                        .with(operatorJwt()).header("Idempotency-Key", "adjust-2")
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"siteId":"%s","amount":1.0000,"reason":"Wrong site"}
+                                """.formatted(UUID.randomUUID())))
+                .andExpect(status().isBadRequest());
     }
 
     private ConsumerRecord<String, String> completionRecord() throws Exception {

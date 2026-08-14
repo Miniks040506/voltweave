@@ -10,25 +10,53 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.voltweave.settlement.access.PortfolioAccessClient;
+import io.voltweave.settlement.api.request.CreateRewardAdjustmentRequest;
+import io.voltweave.settlement.api.response.RewardAdjustmentResponse;
 import io.voltweave.settlement.api.response.SettlementResponse;
+import io.voltweave.settlement.application.RewardApplicationService;
 import io.voltweave.settlement.application.SettlementApplicationService;
 import io.voltweave.settlement.application.model.Settlement;
+import jakarta.validation.Valid;
 
 @RestController
 @PreAuthorize("hasAnyRole('VPP_OPERATOR', 'ADMIN')")
 public class SettlementController {
     private final SettlementApplicationService service;
+    private final RewardApplicationService rewardService;
     private final PortfolioAccessClient accessClient;
 
     public SettlementController(
             SettlementApplicationService service,
+            RewardApplicationService rewardService,
             PortfolioAccessClient accessClient
     ) {
         this.service = service;
+        this.rewardService = rewardService;
         this.accessClient = accessClient;
+    }
+
+    @PostMapping("/api/v1/settlements/{settlementId}/adjustments")
+    public ResponseEntity<RewardAdjustmentResponse> adjust(
+            @PathVariable UUID settlementId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody CreateRewardAdjustmentRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Settlement settlement = service.find(settlementId).orElse(null);
+        if (settlement == null) {
+            return ResponseEntity.notFound().build();
+        }
+        requireAccess(jwt, settlement);
+        return ResponseEntity.ok(RewardAdjustmentResponse.from(rewardService.adjust(
+                settlement, request.siteId(), request.amount(), request.reason(),
+                jwt.getSubject(), idempotencyKey
+        )));
     }
 
     @GetMapping("/api/v1/settlements/{settlementId}")
@@ -52,13 +80,17 @@ public class SettlementController {
             Jwt jwt
     ) {
         return ResponseEntity.of(result.map(settlement -> {
-            UUID organizationId = accessClient.requireVppAccess(
-                    jwt.getSubject(), settlement.vppId()
-            );
-            if (!organizationId.equals(settlement.organizationId())) {
-                throw new AccessDeniedException("Settlement access denied");
-            }
+            requireAccess(jwt, settlement);
             return SettlementResponse.from(settlement);
         }));
+    }
+
+    private void requireAccess(Jwt jwt, Settlement settlement) {
+        UUID organizationId = accessClient.requireVppAccess(
+                jwt.getSubject(), settlement.vppId()
+        );
+        if (!organizationId.equals(settlement.organizationId())) {
+            throw new AccessDeniedException("Settlement access denied");
+        }
     }
 }
