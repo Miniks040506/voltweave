@@ -237,6 +237,109 @@ class PlatformEndToEndIT {
         assertThat(dispatch.path("allocations").size()).isGreaterThanOrEqualTo(1);
     }
 
+    @Test
+    @Order(3)
+    void tenantBoundariesAndIdempotencyHoldAcrossTheGateway() throws Exception {
+        JsonNode replayedProvisioning = client.post(
+                "/api/v1/devices/" + deviceId + "/provision",
+                customerToken,
+                null,
+                200,
+                Map.of("Idempotency-Key", "e2e-provision-battery")
+        );
+        assertThat(replayedProvisioning.path("deviceId").asString())
+                .isEqualTo(deviceId.toString());
+        assertThat(replayedProvisioning.path("credential").isNull()).isTrue();
+
+        JsonNode replayedDispatch = client.post(
+                "/api/v1/dispatches",
+                operatorToken,
+                dispatchRequest(),
+                201,
+                Map.of("Idempotency-Key", "e2e-dispatch-01")
+        );
+        assertThat(replayedDispatch.path("id").asString()).isEqualTo(dispatchId.toString());
+
+        String conflictingRequest = dispatchRequest().replace(
+                "\"durationMinutes\": 15", "\"durationMinutes\": 30"
+        );
+        PlatformClient.Response conflict = client.send(
+                "POST",
+                "/api/v1/dispatches",
+                operatorToken,
+                conflictingRequest,
+                Map.of("Idempotency-Key", "e2e-dispatch-01")
+        );
+        assertThat(conflict.status()).isEqualTo(409);
+
+        UUID outsiderOrganizationId = createOrganization(
+                "COMMERCIAL_CUSTOMER", "Outsider Customer", "e2e-outsider"
+        );
+        JsonNode outsiderSite = client.post("/api/v1/sites", adminToken, """
+                {
+                  "organizationId": "%s",
+                  "name": "Outsider Site",
+                  "timezone": "Asia/Bangkok",
+                  "region": "Bangkok",
+                  "country": "TH"
+                }
+                """.formatted(outsiderOrganizationId), 201);
+
+        assertThat(client.send(
+                "GET",
+                "/api/v1/sites/" + outsiderSite.path("id").asString(),
+                customerToken,
+                null,
+                Map.of()
+        ).status()).isEqualTo(404);
+        assertThat(client.send(
+                "GET", "/api/v1/sites/" + siteId, operatorToken, null, Map.of()
+        ).status()).isEqualTo(403);
+        assertThat(client.send(
+                "GET", "/api/v1/vpps/" + vppId, customerToken, null, Map.of()
+        ).status()).isEqualTo(403);
+        assertThat(client.send(
+                "GET",
+                "/api/v1/sites/" + siteId,
+                "eyJhbGciOiJub25lIn0.eyJzdWIiOiJhdHRhY2tlciJ9.",
+                null,
+                Map.of()
+        ).status()).isEqualTo(401);
+    }
+
+    @Test
+    @Order(4)
+    void preparedCommandsAndStateSurviveAServiceRestart() throws Exception {
+        environment.restartDispatch();
+        JsonNode restored = client.get("/api/v1/dispatches/" + dispatchId, operatorToken);
+        assertThat(restored.path("status").asString()).isEqualTo("SCHEDULED");
+
+        JsonNode commands = client.post(
+                "/api/v1/dispatches/" + dispatchId + "/commands",
+                operatorToken,
+                null,
+                200
+        );
+        assertThat(commands.isArray()).isTrue();
+        assertThat(commands.size()).isGreaterThanOrEqualTo(1);
+        assertThat(commands.path(0).path("status").asString()).isEqualTo("REQUESTED");
+
+        environment.restartDispatch();
+        JsonNode recovered = client.get("/api/v1/dispatches/" + dispatchId, operatorToken);
+        assertThat(recovered.path("status").asString()).isEqualTo("PREPARING");
+
+        JsonNode replayedCommands = client.post(
+                "/api/v1/dispatches/" + dispatchId + "/commands",
+                operatorToken,
+                null,
+                200
+        );
+        assertThat(replayedCommands.path(0).path("id").asString())
+                .isEqualTo(commands.path(0).path("id").asString());
+        assertThat(replayedCommands.path(0).path("status").asString())
+                .isEqualTo("REQUESTED");
+    }
+
     private UUID createOrganization(String type, String name, String tenantCode) throws Exception {
         JsonNode organization = client.post("/api/v1/organizations", adminToken, """
                 {

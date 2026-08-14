@@ -213,7 +213,12 @@ final class PlatformEnvironment implements AutoCloseable {
         Process process = services.remove(name);
         if (process == null) return;
         process.destroy();
-        if (!process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)) process.destroyForcibly();
+        if (!process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)) {
+            process.destroyForcibly();
+            if (!process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)) {
+                throw new IllegalStateException(name + " did not stop");
+            }
+        }
     }
 
     @Override
