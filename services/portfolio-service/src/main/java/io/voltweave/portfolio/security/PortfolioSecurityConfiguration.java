@@ -24,7 +24,9 @@ public class PortfolioSecurityConfiguration {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers(
+                                "/actuator/health", "/actuator/info", "/actuator/prometheus"
+                        ).permitAll()
                         .requestMatchers("/internal/**").access((authentication, context) -> {
                             Object principal = authentication.get().getPrincipal();
                             return new AuthorizationDecision(

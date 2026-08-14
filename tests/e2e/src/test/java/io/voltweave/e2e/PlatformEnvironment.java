@@ -64,6 +64,18 @@ final class PlatformEnvironment implements AutoCloseable {
         return ports.get("mqtt");
     }
 
+    String serviceMetrics(String name) throws Exception {
+        var response = http.send(
+                HttpRequest.newBuilder(URI.create(serviceUrl(name) + "/actuator/prometheus"))
+                        .timeout(Duration.ofSeconds(5)).GET().build(),
+                java.net.http.HttpResponse.BodyHandlers.ofString()
+        );
+        if (response.statusCode() != HttpURLConnection.HTTP_OK) {
+            throw new IllegalStateException(name + " metrics returned " + response.statusCode());
+        }
+        return response.body();
+    }
+
     void restartDispatch() throws Exception {
         stopService("dispatch");
         startService("dispatch", "services/dispatch-service", "dispatch-service");

@@ -28,7 +28,9 @@ public class GatewaySecurityConfiguration {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
                 .authorizeExchange(exchange -> exchange
-                        .pathMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .pathMatchers(
+                                "/actuator/health", "/actuator/info", "/actuator/prometheus"
+                        ).permitAll()
                         .anyExchange().authenticated()
                 )
                 .exceptionHandling(errors -> errors

@@ -22,7 +22,9 @@ public class SettlementSecurityConfiguration {
                         SessionCreationPolicy.STATELESS
                 ))
                 .authorizeHttpRequests(requests -> requests
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers(
+                                "/actuator/health", "/actuator/info", "/actuator/prometheus"
+                        ).permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint((request, response, exception) ->

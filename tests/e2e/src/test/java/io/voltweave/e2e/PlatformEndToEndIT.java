@@ -340,6 +340,18 @@ class PlatformEndToEndIT {
                 .isEqualTo("REQUESTED");
     }
 
+    @Test
+    @Order(5)
+    void everyServiceExposesPrometheusMetrics() throws Exception {
+        for (String service : List.of(
+                "gateway", "portfolio", "telemetry", "intelligence", "dispatch", "settlement"
+        )) {
+            String metrics = environment.serviceMetrics(service);
+            assertThat(metrics).contains("jvm_memory_used_bytes");
+            assertThat(metrics).contains("application=\"" + serviceName(service) + "\"");
+        }
+    }
+
     private UUID createOrganization(String type, String name, String tenantCode) throws Exception {
         JsonNode organization = client.post("/api/v1/organizations", adminToken, """
                 {
@@ -415,5 +427,9 @@ class PlatformEndToEndIT {
     private static Instant currentQuarterHour() {
         Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
         return Instant.ofEpochSecond(now.getEpochSecond() - now.getEpochSecond() % 900);
+    }
+
+    private static String serviceName(String service) {
+        return "gateway".equals(service) ? "api-gateway" : service + "-service";
     }
 }

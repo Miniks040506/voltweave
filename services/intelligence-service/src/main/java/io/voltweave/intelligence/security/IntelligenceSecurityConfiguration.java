@@ -24,7 +24,9 @@ public class IntelligenceSecurityConfiguration {
                         SessionCreationPolicy.STATELESS
                 ))
                 .authorizeHttpRequests(requests -> requests
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers(
+                                "/actuator/health", "/actuator/info", "/actuator/prometheus"
+                        ).permitAll()
                         .requestMatchers("/internal/**").access((authentication, context) ->
                                 new AuthorizationDecision(
                                         authentication.get().getPrincipal() instanceof Jwt jwt
