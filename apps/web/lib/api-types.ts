@@ -108,3 +108,25 @@ export type Dispatch = {
   status: string;
   allocations: { siteId: string; deviceId: string; allocatedPowerKw: number }[];
 };
+
+export type Organization = {
+  id: string;
+  type: string;
+  legalName: string;
+  displayName: string;
+  tenantCode: string;
+  status: string;
+  country: string;
+  timezone: string;
+};
+
+export type AuditEntry = {
+  id: string;
+  actorType: string;
+  actorId: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  occurredAt: string;
+  correlationId: string;
+};
