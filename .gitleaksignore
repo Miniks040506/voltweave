@@ -1,0 +1,2 @@
+# Synthetic unsigned JWT used by the negative E2E authentication test.
+dc6d904062f4533a028ebea667f620299d2c4896:tests/e2e/src/test/java/io/voltweave/e2e/PlatformEndToEndIT.java:jwt:304

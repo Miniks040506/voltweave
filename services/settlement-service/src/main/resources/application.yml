@@ -1,6 +1,8 @@
 spring:
   application:
     name: settlement-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   datasource:
     url: ${SETTLEMENT_DB_URL:jdbc:postgresql://localhost:6543/settlement_db}
     username: ${SETTLEMENT_DB_USERNAME:settlement_app}
@@ -35,6 +37,7 @@ spring:
 
 server:
   port: ${PORT:8085}
+  shutdown: graceful
 
 management:
   endpoints:

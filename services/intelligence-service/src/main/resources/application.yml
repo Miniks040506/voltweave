@@ -1,6 +1,8 @@
 spring:
   application:
     name: intelligence-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   datasource:
     url: ${INTELLIGENCE_DB_URL:jdbc:postgresql://localhost:6543/intelligence_db}
     username: ${INTELLIGENCE_DB_USERNAME:intelligence_app}
@@ -34,6 +36,7 @@ spring:
 
 server:
   port: ${PORT:8083}
+  shutdown: graceful
 
 management:
   endpoints:

@@ -1,6 +1,8 @@
 spring:
   application:
     name: api-gateway
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   security:
     oauth2:
       resourceserver:
@@ -58,6 +60,7 @@ spring:
 
 server:
   port: ${PORT:8080}
+  shutdown: graceful
 
 management:
   endpoints:

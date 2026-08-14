@@ -1,6 +1,8 @@
 spring:
   application:
     name: telemetry-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   datasource:
     url: ${TELEMETRY_DB_URL:jdbc:postgresql://localhost:6543/telemetry_db}
     username: ${TELEMETRY_DB_USERNAME:telemetry_app}
@@ -38,6 +40,7 @@ spring:
 
 server:
   port: ${PORT:8082}
+  shutdown: graceful
 
 management:
   endpoints:
