@@ -165,6 +165,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .detail-list div { display: flex; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--border); padding: 0.8rem 0; }
 .detail-list dt { color: var(--muted); }
 .detail-list dd { margin: 0; text-align: right; }
+.preference-form { display: grid; gap: 1rem; border-top: 1px solid var(--border); margin-top: 0.5rem; padding-top: 1.25rem; }
+.check-field { display: flex; align-items: flex-start; gap: 0.65rem; font-size: 0.9rem; line-height: 1.5; }
+.check-field input { width: 1rem; height: 1rem; margin-top: 0.2rem; accent-color: var(--accent); }
+.form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.primary-button:disabled { cursor: wait; opacity: 0.6; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 th, td { border-bottom: 1px solid var(--border); padding: 0.75rem; text-align: left; white-space: nowrap; }

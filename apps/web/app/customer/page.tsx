@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
 import { Device, DeviceTwin, Earnings, Site } from "@/lib/api-types";
@@ -93,6 +93,19 @@ export default function CustomerPage() {
                 <div><dt>VPP participation</dt><dd>{selected?.vppOptIn ? "Enabled" : "Paused"}</dd></div>
                 <div><dt>Battery reserve</dt><dd>{selected?.minimumBatteryReservePercent}%</dd></div>
               </dl>
+              {selected && (
+                <PreferenceForm
+                  key={selected.id}
+                  site={selected}
+                  save={(body) => api<Site>(`/api/v1/sites/${selected.id}/preferences`, {
+                    method: "PATCH",
+                    body: JSON.stringify(body),
+                  })}
+                  onSaved={(updated) => setSites((current) => current.map((site) =>
+                    site.id === updated.id ? updated : site
+                  ))}
+                />
+              )}
             </section>
 
             <section className="panel">
@@ -121,4 +134,57 @@ export default function CustomerPage() {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return <div className="metric"><span>{label}</span><strong>{value}</strong></div>;
+}
+
+function PreferenceForm({
+  site,
+  save,
+  onSaved,
+}: {
+  site: Site;
+  save: (body: { vppOptIn: boolean; minimumBatteryReservePercent: number }) => Promise<Site>;
+  onSaved: (site: Site) => void;
+}) {
+  const [optedIn, setOptedIn] = useState(site.vppOptIn);
+  const [reserve, setReserve] = useState(site.minimumBatteryReservePercent);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setMessage("");
+    try {
+      onSaved(await save({ vppOptIn: optedIn, minimumBatteryReservePercent: reserve }));
+      setMessage("Preferences saved.");
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : "Could not save preferences.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form className="preference-form" onSubmit={submit}>
+      <label className="check-field">
+        <input type="checkbox" checked={optedIn} onChange={(event) => setOptedIn(event.target.checked)} />
+        Allow this site to participate in VPP dispatches
+      </label>
+      <label className="field">
+        <span>Minimum battery reserve (%)</span>
+        <input
+          type="number"
+          min="0"
+          max="100"
+          value={reserve}
+          onChange={(event) => setReserve(Number(event.target.value))}
+          required
+        />
+      </label>
+      <div className="form-actions">
+        <button className="primary-button" disabled={saving}>{saving ? "Saving..." : "Save preferences"}</button>
+        <span className="status" aria-live="polite">{message}</span>
+      </div>
+    </form>
+  );
 }
