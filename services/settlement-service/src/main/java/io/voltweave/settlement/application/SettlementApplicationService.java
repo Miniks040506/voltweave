@@ -4,9 +4,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,20 +16,31 @@ import io.voltweave.contracts.events.EventTypes;
 import io.voltweave.contracts.events.dispatch.v1.DispatchCompletedPayloadV1;
 import io.voltweave.settlement.access.DispatchSettlementClient;
 import io.voltweave.settlement.access.DispatchSettlementClient.SettlementInput;
+import io.voltweave.settlement.application.model.RewardLedgerEntry;
 import io.voltweave.settlement.application.model.Settlement;
+import io.voltweave.settlement.persistence.RewardLedgerRepository;
 import io.voltweave.settlement.persistence.SettlementRepository;
 
 @Service
 public class SettlementApplicationService {
     private final DispatchSettlementClient dispatchClient;
     private final SettlementRepository repository;
+    private final RewardLedgerRepository rewardRepository;
+    private final BigDecimal rewardRate;
 
     public SettlementApplicationService(
             DispatchSettlementClient dispatchClient,
-            SettlementRepository repository
+            SettlementRepository repository,
+            RewardLedgerRepository rewardRepository,
+            @Value("${voltweave.rewards.rate-per-kwh:0.25}") BigDecimal rewardRate
     ) {
         this.dispatchClient = dispatchClient;
         this.repository = repository;
+        this.rewardRepository = rewardRepository;
+        if (rewardRate.signum() < 0) {
+            throw new IllegalArgumentException("Reward rate cannot be negative");
+        }
+        this.rewardRate = rewardRate;
     }
 
     @Transactional
@@ -63,7 +76,7 @@ public class SettlementApplicationService {
                 .map(point -> new Settlement.BaselinePoint(
                         point.forecastAt(), point.baselineGridImportKw()
                 )).toList();
-        repository.insert(new Settlement(
+        var settlement = new Settlement(
                 UUID.randomUUID(), organizationId, input.dispatchId(), input.vppId(),
                 input.completionStatus(), input.targetPowerKw(), input.scheduledStartAt(),
                 input.scheduledEndAt(), input.frozenAt(), input.baselineId(),
@@ -71,7 +84,9 @@ public class SettlementApplicationService {
                 expected, delivered, percent(delivered, expected), "CALCULATED",
                 completion.completedAt(),
                 baselinePoints, lines
-        ));
+        );
+        repository.insert(settlement);
+        insertBaseRewards(settlement, eventId);
     }
 
     @Transactional(readOnly = true)
@@ -115,5 +130,22 @@ public class SettlementApplicationService {
     private static BigDecimal sum(java.util.List<BigDecimal> values) {
         return values.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(6, RoundingMode.HALF_UP);
+    }
+
+    private void insertBaseRewards(Settlement settlement, UUID sourceEventId) {
+        var energyBySite = new LinkedHashMap<UUID, BigDecimal>();
+        settlement.lines().forEach(line -> energyBySite.merge(
+                line.siteId(), line.deliveredEnergyKwh(), BigDecimal::add
+        ));
+        energyBySite.forEach((siteId, energy) -> {
+            BigDecimal normalizedEnergy = energy.setScale(6, RoundingMode.HALF_UP);
+            rewardRepository.insertBase(new RewardLedgerEntry(
+                    UUID.randomUUID(), settlement.organizationId(), settlement.id(), siteId,
+                    "BASE_REWARD", normalizedEnergy, rewardRate,
+                    normalizedEnergy.multiply(rewardRate).setScale(4, RoundingMode.HALF_UP),
+                    "VWC", sourceEventId, null, "Settlement reward",
+                    "settlement-service", settlement.calculatedAt()
+            ));
+        });
     }
 }

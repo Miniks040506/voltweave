@@ -45,6 +45,7 @@ class SettlementWorkflowIntegrationTests {
     private static final UUID DISPATCH_ID = UUID.randomUUID();
     private static final UUID VPP_ID = UUID.randomUUID();
     private static final UUID BASELINE_ID = UUID.randomUUID();
+    private static final UUID SITE_ID = UUID.randomUUID();
     private static final Instant END = Instant.parse("2026-08-13T03:00:00Z");
 
     @Autowired
@@ -77,12 +78,17 @@ class SettlementWorkflowIntegrationTests {
         assertThat(count("settlements")).isEqualTo(1);
         assertThat(count("settlement_baseline_points")).isEqualTo(1);
         assertThat(count("settlement_lines")).isEqualTo(2);
+        assertThat(count("reward_ledger_entries")).isEqualTo(1);
         assertThat(decimal("expected_energy_kwh", "settlements"))
                 .isEqualByComparingTo("10.000000");
         assertThat(decimal("delivered_energy_kwh", "settlements"))
                 .isEqualByComparingTo("9.500000");
         assertThat(decimal("achievement_percent", "settlements"))
                 .isEqualByComparingTo("95.000");
+        assertThat(decimal("energy_kwh", "reward_ledger_entries"))
+                .isEqualByComparingTo("9.500000");
+        assertThat(decimal("amount", "reward_ledger_entries"))
+                .isEqualByComparingTo("2.3750");
     }
 
     @Test
@@ -138,12 +144,12 @@ class SettlementWorkflowIntegrationTests {
                 List.of(new BaselinePoint(END, new BigDecimal("12"))),
                 List.of(
                         new Participant(
-                                UUID.randomUUID(), UUID.randomUUID(), "BATTERY",
+                                SITE_ID, UUID.randomUUID(), "BATTERY",
                                 new BigDecimal("6"), new BigDecimal("6"),
                                 new BigDecimal("5.5")
                         ),
                         new Participant(
-                                UUID.randomUUID(), UUID.randomUUID(), "EV_CHARGER",
+                                SITE_ID, UUID.randomUUID(), "EV_CHARGER",
                                 new BigDecimal("4"), new BigDecimal("4"),
                                 new BigDecimal("4")
                         )
