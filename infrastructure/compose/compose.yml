@@ -150,7 +150,32 @@ services:
         condition: service_healthy
     restart: "no"
 
+  prometheus:
+    profiles: ["observability"]
+    image: prom/prometheus:v3.13.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    ports:
+      - "127.0.0.1:${PROMETHEUS_HOST_PORT:-9090}:9090"
+    volumes:
+      - prometheus_data:/prometheus
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    mem_limit: 512m
+    stop_grace_period: 20s
+
 volumes:
   postgres_data:
   kafka_data:
   mosquitto_data:
+  prometheus_data:
