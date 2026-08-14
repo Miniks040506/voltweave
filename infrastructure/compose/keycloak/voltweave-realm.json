@@ -60,6 +60,16 @@
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
       "secret": "${KEYCLOAK_INTERNAL_CLIENT_SECRET}"
+    },
+    {
+      "clientId": "voltweave-e2e",
+      "name": "VoltWeave Local E2E",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [

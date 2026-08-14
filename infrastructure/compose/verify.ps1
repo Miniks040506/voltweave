@@ -225,12 +225,17 @@ $clients = Invoke-RestMethod -Headers $headers `
   -Uri "$keycloakBaseUrl/admin/realms/voltweave/clients"
 $webClient = $clients | Where-Object clientId -eq "voltweave-web"
 $internalClient = $clients | Where-Object clientId -eq "voltweave-internal"
+$e2eClient = $clients | Where-Object clientId -eq "voltweave-e2e"
 Assert-Equal "web client uses public PKCE flow" `
   ($webClient.publicClient -and $webClient.standardFlowEnabled -and
     -not $webClient.directAccessGrantsEnabled) $true
 Assert-Equal "internal client uses service account" `
   (-not $internalClient.publicClient -and $internalClient.serviceAccountsEnabled -and
     -not $internalClient.directAccessGrantsEnabled) $true
+Assert-Equal "E2E client is local password-grant only" `
+  ($e2eClient.publicClient -and $e2eClient.directAccessGrantsEnabled -and
+    -not $e2eClient.standardFlowEnabled -and
+    -not $e2eClient.serviceAccountsEnabled) $true
 
 $serviceToken = Invoke-RestMethod -Method Post `
   -Uri "$keycloakBaseUrl/realms/voltweave/protocol/openid-connect/token" `
