@@ -16,6 +16,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.voltweave</groupId>
+            <artifactId>simulation-service</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
