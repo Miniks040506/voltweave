@@ -45,5 +45,6 @@
         <module>services/settlement-service</module>
         <module>services/telemetry-service</module>
         <module>simulator/simulation-service</module>
+        <module>tests/e2e</module>
     </modules>
 </project>
