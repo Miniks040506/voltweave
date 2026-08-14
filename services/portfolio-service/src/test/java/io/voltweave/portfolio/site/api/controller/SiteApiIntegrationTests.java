@@ -105,6 +105,19 @@ class SiteApiIntegrationTests {
     }
 
     @Test
+    void listsOnlySitesForTheAuthenticatedCustomer() throws Exception {
+        String owner = "site-list-owner";
+        createSite(owner, createOrganization(owner));
+        createSite(owner, createOrganization(owner));
+        createSite("site-list-other", createOrganization("site-list-other"));
+
+        mockMvc.perform(get("/api/v1/sites").with(customer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].minimumBatteryReservePercent").value(20));
+    }
+
+    @Test
     void cannotCreateSiteForOrganizationOutsideMembership() throws Exception {
         UUID organizationId = createOrganization("actual-owner");
 

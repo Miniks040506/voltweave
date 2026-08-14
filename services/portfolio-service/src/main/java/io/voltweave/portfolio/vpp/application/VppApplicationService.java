@@ -94,6 +94,12 @@ public class VppApplicationService {
         return profile(requireVpp(vppId, subjectId));
     }
 
+    @Transactional(readOnly = true)
+    public List<VppProfile> findAllForSubject(String subjectId) {
+        return vppRepository.findAllForSubject(subjectId).stream()
+                .map(this::profile).toList();
+    }
+
     @Transactional
     public VppProfile addSite(UUID vppId, UUID siteId, String subjectId) {
         var vpp = requireActiveVpp(vppId, subjectId);

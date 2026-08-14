@@ -1,6 +1,7 @@
 package io.voltweave.portfolio.organization.api.controller;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,12 @@ public class OrganizationController {
 
     public OrganizationController(OrganizationService organizationService) {
         this.organizationService = organizationService;
+    }
+
+    @GetMapping
+    public List<OrganizationResponse> findAll(@AuthenticationPrincipal Jwt jwt) {
+        return organizationService.findAllForSubject(jwt.getSubject()).stream()
+                .map(OrganizationResponse::from).toList();
     }
 
     @PostMapping

@@ -1,6 +1,7 @@
 package io.voltweave.portfolio.organization.application;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -65,6 +66,11 @@ public class OrganizationService {
     public Organization findForSubject(UUID organizationId, String subjectId) {
         return organizationRepository.findByIdForSubject(organizationId, subjectId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Organization> findAllForSubject(String subjectId) {
+        return organizationRepository.findAllForSubject(subjectId);
     }
 
     @Transactional

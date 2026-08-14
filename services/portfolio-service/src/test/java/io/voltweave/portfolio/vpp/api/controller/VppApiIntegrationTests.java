@@ -102,6 +102,23 @@ class VppApiIntegrationTests {
     }
 
     @Test
+    void listsOnlyVppsForTheAuthenticatedOperator() throws Exception {
+        String owner = "list-operator";
+        UUID organizationId = createOrganization(owner, OrganizationType.VPP_OPERATOR);
+        createVpp(owner, organizationId, "North Fleet");
+        createVpp(owner, organizationId, "South Fleet");
+        String other = "other-list-operator";
+        createVpp(other, createOrganization(other, OrganizationType.VPP_OPERATOR), "Private");
+
+        mockMvc.perform(get("/api/v1/vpps").with(operator(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[*].name").value(org.hamcrest.Matchers.containsInAnyOrder(
+                        "North Fleet", "South Fleet"
+                )));
+    }
+
+    @Test
     void requiresCustomerOptInAndOneActiveVppPerSite() throws Exception {
         String customer = "participating-customer";
         UUID siteId = createSite(customer, false);

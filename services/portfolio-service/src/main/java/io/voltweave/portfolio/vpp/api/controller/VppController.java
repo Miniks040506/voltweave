@@ -1,6 +1,7 @@
 package io.voltweave.portfolio.vpp.api.controller;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,12 @@ public class VppController {
 
     public VppController(VppApplicationService vppService) {
         this.vppService = vppService;
+    }
+
+    @GetMapping
+    public List<VppResponse> findAll(@AuthenticationPrincipal Jwt jwt) {
+        return vppService.findAllForSubject(jwt.getSubject()).stream()
+                .map(VppResponse::from).toList();
     }
 
     @PostMapping

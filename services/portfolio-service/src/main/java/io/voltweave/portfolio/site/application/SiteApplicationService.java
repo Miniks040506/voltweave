@@ -1,6 +1,7 @@
 package io.voltweave.portfolio.site.application;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -67,6 +68,14 @@ public class SiteApplicationService {
         var site = siteRepository.findByIdForSubject(siteId, subjectId)
                 .orElseThrow(() -> new SiteNotFoundException(siteId));
         return new SiteProfile(site, preferenceForSubject(siteId, subjectId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<SiteProfile> findAllForSubject(String subjectId) {
+        return siteRepository.findAllForSubject(subjectId).stream()
+                .map(site -> new SiteProfile(
+                        site, preferenceForSubject(site.id(), subjectId)
+                )).toList();
     }
 
     @Transactional

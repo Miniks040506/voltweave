@@ -1,6 +1,7 @@
 package io.voltweave.portfolio.site.persistence;
 
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -92,6 +93,18 @@ public class SiteRepository {
                 .param("subjectId", subjectId)
                 .query(ROW_MAPPER)
                 .optional();
+    }
+
+    public List<Site> findAllForSubject(String subjectId) {
+        return jdbcClient.sql("""
+                SELECT s.*
+                FROM sites s
+                JOIN organization_members m ON m.organization_id = s.organization_id
+                WHERE m.subject_id = :subjectId AND m.status = 'ACTIVE'
+                ORDER BY s.created_at DESC, s.id
+                """)
+                .param("subjectId", subjectId)
+                .query(ROW_MAPPER).list();
     }
 
     public Optional<Site> findVppEligibleById(UUID siteId) {

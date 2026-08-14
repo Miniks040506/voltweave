@@ -1,6 +1,7 @@
 package io.voltweave.portfolio.site.api.controller;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,12 @@ public class SiteController {
 
     public SiteController(SiteApplicationService siteService) {
         this.siteService = siteService;
+    }
+
+    @GetMapping
+    public List<SiteResponse> findAll(@AuthenticationPrincipal Jwt jwt) {
+        return siteService.findAllForSubject(jwt.getSubject()).stream()
+                .map(SiteResponse::from).toList();
     }
 
     @PostMapping

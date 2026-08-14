@@ -1,6 +1,7 @@
 package io.voltweave.portfolio.organization.persistence;
 
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -74,5 +75,17 @@ public class OrganizationRepository {
                 .param("subjectId", subjectId)
                 .query(ROW_MAPPER)
                 .optional();
+    }
+
+    public List<Organization> findAllForSubject(String subjectId) {
+        return jdbcClient.sql("""
+                SELECT o.*
+                FROM organizations o
+                JOIN organization_members m ON m.organization_id = o.id
+                WHERE m.subject_id = :subjectId AND m.status = 'ACTIVE'
+                ORDER BY o.created_at DESC, o.id
+                """)
+                .param("subjectId", subjectId)
+                .query(ROW_MAPPER).list();
     }
 }

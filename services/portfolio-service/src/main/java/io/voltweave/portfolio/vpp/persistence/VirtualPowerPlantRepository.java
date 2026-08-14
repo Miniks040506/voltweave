@@ -1,6 +1,7 @@
 package io.voltweave.portfolio.vpp.persistence;
 
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -64,5 +65,17 @@ public class VirtualPowerPlantRepository {
                 .param("subjectId", subjectId)
                 .query(ROW_MAPPER)
                 .optional();
+    }
+
+    public List<VirtualPowerPlant> findAllForSubject(String subjectId) {
+        return jdbcClient.sql("""
+                SELECT v.*
+                FROM virtual_power_plants v
+                JOIN organization_members m ON m.organization_id = v.organization_id
+                WHERE m.subject_id = :subjectId AND m.status = 'ACTIVE'
+                ORDER BY v.created_at DESC, v.id
+                """)
+                .param("subjectId", subjectId)
+                .query(ROW_MAPPER).list();
     }
 }

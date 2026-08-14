@@ -97,6 +97,24 @@ class OrganizationApiIntegrationTests {
     }
 
     @Test
+    void listsOnlyOrganizationsForTheAuthenticatedSubject() throws Exception {
+        mockMvc.perform(post("/api/v1/organizations").with(admin("list-owner"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_REQUEST.replace("north-grid", "list-grid")))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/organizations").with(admin("other-owner"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_REQUEST.replace("north-grid", "other-list-grid")))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/organizations")
+                        .with(jwt().jwt(token -> token.subject("list-owner"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].tenantCode").value("list-grid"));
+    }
+
+    @Test
     void rejectsInvalidTenantCode() throws Exception {
         mockMvc.perform(post("/api/v1/organizations")
                         .with(admin("admin-subject"))
