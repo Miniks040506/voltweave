@@ -3,15 +3,16 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
-import { Dispatch, Flexibility, Forecast, Optimization, Vpp } from "@/lib/api-types";
+import { AutomationCandidate, Dispatch, Flexibility, Forecast, Optimization, Vpp } from "@/lib/api-types";
 
 export default function OperatorPage() {
-  const { api, ready, authenticated } = useAuth();
+  const { api, download, ready, authenticated } = useAuth();
   const [vpps, setVpps] = useState<Vpp[]>([]);
   const [vppId, setVppId] = useState("");
   const [forecast, setForecast] = useState<Forecast | null>(null);
   const [flexibility, setFlexibility] = useState<Flexibility | null>(null);
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
+  const [candidates, setCandidates] = useState<AutomationCandidate[]>([]);
   const [targetStart, setTargetStart] = useState("");
   const [duration, setDuration] = useState(30);
   const [targetPower, setTargetPower] = useState(10);
@@ -36,10 +37,12 @@ export default function OperatorPage() {
     if (!vppId) return;
     Promise.all([
       api<Dispatch[]>(`/api/v1/dispatches?vppId=${vppId}`),
+      api<AutomationCandidate[]>(`/api/v1/automation-candidates?vppId=${vppId}`),
       api<Forecast>(`/api/v1/vpps/${vppId}/forecast`).catch(() => null),
       api<Flexibility>(`/api/v1/vpps/${vppId}/flexibility`).catch(() => null),
-    ]).then(([dispatchRows, latestForecast, latestFlexibility]) => {
+    ]).then(([dispatchRows, pendingCandidates, latestForecast, latestFlexibility]) => {
       setDispatches(dispatchRows);
+      setCandidates(pendingCandidates);
       setForecast(latestForecast);
       setFlexibility(latestFlexibility);
     }).catch((cause: Error) => setError(cause.message));
@@ -120,6 +123,31 @@ export default function OperatorPage() {
     }
   }
 
+  async function decideCandidate(candidate: AutomationCandidate, approve: boolean) {
+    setWorking(true);
+    setError(null);
+    try {
+      await api<unknown>(`/api/v1/automation-candidates/${candidate.dispatch.id}/${approve ? "approve" : "reject"}`, { method: "POST" });
+      const updated = await api<Dispatch>(`/api/v1/dispatches/${candidate.dispatch.id}`);
+      setCandidates((current) => current.filter((item) => item.dispatch.id !== updated.id));
+      setDispatches((current) => [updated, ...current.filter((item) => item.id !== updated.id)]);
+      setMessage(`Automation candidate ${approve ? "approved" : "rejected"}.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not update automation candidate.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function downloadReport(dispatchId: string) {
+    setError(null);
+    try {
+      await download(`/api/v1/reports/dispatches/${dispatchId}.csv`, `dispatch-${dispatchId}-settlement.csv`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not download settlement report.");
+    }
+  }
+
   return (
     <AppShell
       role="VPP_OPERATOR"
@@ -138,6 +166,7 @@ export default function OperatorPage() {
             setForecast(null);
             setFlexibility(null);
             setDispatches([]);
+            setCandidates([]);
             setError(null);
             setVppId(event.target.value);
           }}>
@@ -151,6 +180,18 @@ export default function OperatorPage() {
           <Metric label="Available energy" value={`${Number(flexibility?.availableEnergyKwh ?? 0).toFixed(1)} kWh`} />
           <Metric label="Dispatches" value={String(dispatches.length)} />
         </section>
+
+        {candidates.length > 0 && <section className="panel workflow-panel">
+          <div className="panel-heading"><div><p className="eyebrow">APPROVAL QUEUE</p><h2>Automation candidates</h2></div><span className="badge">{candidates.length} PENDING</span></div>
+          <div className="candidate-list">{candidates.map((candidate) => <div key={candidate.dispatch.id}>
+            <span>{formatTime(candidate.dispatch.scheduledStartAt)}</span>
+            <strong>{Number(candidate.dispatch.targetPowerKw).toFixed(1)} kW</strong>
+            <div className="form-actions">
+              <button className="primary-button" disabled={working} onClick={() => void decideCandidate(candidate, true)}>Approve</button>
+              <button className="text-button" disabled={working} onClick={() => void decideCandidate(candidate, false)}>Reject</button>
+            </div>
+          </div>)}</div>
+        </section>}
 
         <section className="panel workflow-panel">
           <div className="panel-heading"><div><p className="eyebrow">MANUAL CONTROL</p><h2>Prepare a dispatch</h2></div></div>
@@ -191,7 +232,7 @@ export default function OperatorPage() {
                   <td>{Number(dispatch.targetPowerKw).toFixed(1)} kW</td>
                   <td>{Number(dispatch.plannedPowerKw).toFixed(1)} kW</td>
                   <td><span className="badge">{dispatch.status}</span></td>
-                  <td>{dispatch.status === "SCHEDULED" ? <button className="text-button" disabled={working} onClick={() => void prepareCommands(dispatch)}>Prepare commands</button> : "Prepared"}</td>
+                  <td>{dispatch.status === "SCHEDULED" ? <button className="text-button" disabled={working} onClick={() => void prepareCommands(dispatch)}>Prepare commands</button> : dispatch.status === "COMPLETED" ? <button className="text-button" onClick={() => void downloadReport(dispatch.id)}>CSV report</button> : "Prepared"}</td>
                 </tr>)}</tbody>
               </table></div>
             )}

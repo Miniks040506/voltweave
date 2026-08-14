@@ -109,6 +109,13 @@ export type Dispatch = {
   allocations: { siteId: string; deviceId: string; allocatedPowerKw: number }[];
 };
 
+export type AutomationCandidate = {
+  policyId: string;
+  policyVersion: number;
+  evaluatedAt: string;
+  dispatch: Dispatch;
+};
+
 export type Organization = {
   id: string;
   type: string;

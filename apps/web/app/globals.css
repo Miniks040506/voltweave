@@ -177,6 +177,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .preview-strip div { display: grid; gap: 0.25rem; }
 .preview-strip span { color: var(--muted); font-size: 0.75rem; }
 .preview-strip .primary-button { margin-left: auto; }
+.candidate-list { display: grid; gap: 0; }
+.candidate-list > div { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.5rem 1rem; border-top: 1px solid var(--border); padding: 0.9rem 0; }
+.candidate-list .form-actions { grid-column: 1 / -1; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 th, td { border-bottom: 1px solid var(--border); padding: 0.75rem; text-align: left; white-space: nowrap; }
@@ -213,6 +216,8 @@ td small { display: block; color: var(--muted); margin-top: 0.2rem; }
   .dispatch-form { grid-template-columns: repeat(4, minmax(0, 1fr)) auto; }
   .organization-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .organization-form .primary-button { justify-self: start; }
+  .candidate-list > div { grid-template-columns: 1fr auto auto; }
+  .candidate-list .form-actions { grid-column: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

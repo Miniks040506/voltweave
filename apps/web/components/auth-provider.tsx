@@ -12,6 +12,7 @@ type AuthContextValue = {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   api: <T>(path: string, init?: RequestInit) => Promise<T>;
+  download: (path: string, filename: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -56,8 +57,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return response.json() as Promise<T>;
   }, []);
 
+  const download = useCallback(async (path: string, filename: string) => {
+    if (!keycloak.authenticated) throw new Error("Your session has expired.");
+    await keycloak.updateToken(30);
+    const response = await fetch(`/backend${path}`, {
+      headers: { Authorization: `Bearer ${keycloak.token}` },
+    });
+    if (!response.ok) {
+      const problem = await response.json().catch(() => null);
+      throw new Error(problem?.detail ?? problem?.title ?? `Download failed (${response.status})`);
+    }
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
   const value: AuthContextValue = {
-    ready, authenticated, name, roles: currentRoles, error, api,
+    ready, authenticated, name, roles: currentRoles, error, api, download,
     login: () => keycloak.login({ redirectUri: window.location.origin }),
     logout: () => keycloak.logout({ redirectUri: window.location.origin }),
   };
