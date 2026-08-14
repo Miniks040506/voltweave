@@ -172,6 +172,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .primary-button:disabled { cursor: wait; opacity: 0.6; }
 .workflow-panel { margin-bottom: 1rem; }
 .dispatch-form { display: grid; gap: 0.8rem; align-items: end; }
+.organization-form { display: grid; gap: 0.8rem; align-items: end; }
 .preview-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem; border-top: 1px solid var(--border); margin-top: 1.25rem; padding-top: 1.25rem; }
 .preview-strip div { display: grid; gap: 0.25rem; }
 .preview-strip span { color: var(--muted); font-size: 0.75rem; }
@@ -210,6 +211,8 @@ td small { display: block; color: var(--muted); margin-top: 0.2rem; }
   .content-grid { grid-template-columns: minmax(16rem, 0.7fr) minmax(0, 1.3fr); }
   .content-grid.equal-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dispatch-form { grid-template-columns: repeat(4, minmax(0, 1fr)) auto; }
+  .organization-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .organization-form .primary-button { justify-self: start; }
 }
 
 @media (prefers-reduced-motion: reduce) {
