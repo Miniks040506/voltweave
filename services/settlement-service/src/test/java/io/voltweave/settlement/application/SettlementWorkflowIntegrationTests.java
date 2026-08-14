@@ -119,6 +119,28 @@ class SettlementWorkflowIntegrationTests {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void returnsOnlyRewardsForTheCustomersAuthorizedSites() throws Exception {
+        when(dispatchClient.input(DISPATCH_ID)).thenReturn(input());
+        consumer.consume(completionRecord());
+        when(portfolioAccessClient.siteIdsForSubject("customer"))
+                .thenReturn(List.of(SITE_ID));
+
+        mockMvc.perform(get("/api/v1/customers/me/earnings").with(customerJwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalAmount").value(2.375))
+                .andExpect(jsonPath("$.currency").value("VWC"))
+                .andExpect(jsonPath("$.entries.length()").value(1))
+                .andExpect(jsonPath("$.entries[0].siteId").value(SITE_ID.toString()));
+
+        when(portfolioAccessClient.siteIdsForSubject("customer"))
+                .thenReturn(List.of(UUID.randomUUID()));
+        mockMvc.perform(get("/api/v1/customers/me/earnings").with(customerJwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalAmount").value(0.0))
+                .andExpect(jsonPath("$.entries.length()").value(0));
+    }
+
     private ConsumerRecord<String, String> completionRecord() throws Exception {
         var payload = new DispatchCompletedPayloadV1(
                 DISPATCH_ID, VPP_ID, "PARTIALLY_COMPLETED", new BigDecimal("10"),
@@ -169,5 +191,10 @@ class SettlementWorkflowIntegrationTests {
     private static org.springframework.test.web.servlet.request.RequestPostProcessor operatorJwt() {
         return jwt().jwt(token -> token.subject("operator"))
                 .authorities(new SimpleGrantedAuthority("ROLE_VPP_OPERATOR"));
+    }
+
+    private static org.springframework.test.web.servlet.request.RequestPostProcessor customerJwt() {
+        return jwt().jwt(token -> token.subject("customer"))
+                .authorities(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
     }
 }

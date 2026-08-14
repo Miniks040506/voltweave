@@ -1,5 +1,6 @@
 package io.voltweave.settlement.access;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -24,6 +25,13 @@ public class PortfolioAccessClient {
         return response.organizationId();
     }
 
+    public List<UUID> siteIdsForSubject(String subjectId) {
+        var response = restClient.post().uri("/internal/v1/access-checks/sites")
+                .body(new SubjectSitesRequest(subjectId))
+                .retrieve().body(SubjectSitesResponse.class);
+        return response == null ? List.of() : response.siteIds();
+    }
+
     private record AccessCheckRequest(String subjectId, String resourceType, UUID resourceId) {
     }
 
@@ -32,5 +40,11 @@ public class PortfolioAccessClient {
             UUID organizationId,
             String organizationRole
     ) {
+    }
+
+    private record SubjectSitesRequest(String subjectId) {
+    }
+
+    private record SubjectSitesResponse(List<UUID> siteIds) {
     }
 }

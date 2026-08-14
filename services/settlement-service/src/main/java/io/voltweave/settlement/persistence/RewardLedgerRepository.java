@@ -1,6 +1,8 @@
 package io.voltweave.settlement.persistence;
 
 import java.sql.Timestamp;
+import java.util.List;
+import java.util.UUID;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -40,5 +42,33 @@ public class RewardLedgerRepository {
                 .param("createdBy", entry.createdBy())
                 .param("createdAt", Timestamp.from(entry.createdAt()))
                 .update();
+    }
+
+    public List<RewardLedgerEntry> findByParticipantIds(List<UUID> participantIds) {
+        if (participantIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbcClient.sql("""
+                SELECT * FROM reward_ledger_entries
+                WHERE participant_id IN (:participantIds)
+                ORDER BY created_at DESC, id
+                """)
+                .param("participantIds", participantIds)
+                .query((row, rowNumber) -> new RewardLedgerEntry(
+                        row.getObject("id", UUID.class),
+                        row.getObject("organization_id", UUID.class),
+                        row.getObject("settlement_id", UUID.class),
+                        row.getObject("participant_id", UUID.class),
+                        row.getString("entry_type"),
+                        row.getBigDecimal("energy_kwh"),
+                        row.getBigDecimal("rate_per_kwh"),
+                        row.getBigDecimal("amount"),
+                        row.getString("currency"),
+                        row.getObject("source_event_id", UUID.class),
+                        row.getString("idempotency_key"),
+                        row.getString("reason"),
+                        row.getString("created_by"),
+                        row.getTimestamp("created_at").toInstant()
+                )).list();
     }
 }
