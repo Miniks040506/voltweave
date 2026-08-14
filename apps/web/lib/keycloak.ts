@@ -5,7 +5,7 @@ export type AppRole = "CUSTOMER" | "VPP_OPERATOR" | "ADMIN";
 const appRoles = new Set<AppRole>(["CUSTOMER", "VPP_OPERATOR", "ADMIN"]);
 
 export const keycloak = new Keycloak({
-  url: process.env.NEXT_PUBLIC_KEYCLOAK_URL ?? "http://localhost:8090",
+  url: process.env.NEXT_PUBLIC_KEYCLOAK_URL ?? "http://localhost:8180",
   realm: process.env.NEXT_PUBLIC_KEYCLOAK_REALM ?? "voltweave",
   clientId: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID ?? "voltweave-web",
 });
