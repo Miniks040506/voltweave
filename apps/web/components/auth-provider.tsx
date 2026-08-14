@@ -16,6 +16,16 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+let initialization: Promise<boolean> | null = null;
+
+function initializeKeycloak(): Promise<boolean> {
+  initialization ??= keycloak.init({
+    onLoad: "check-sso",
+    pkceMethod: "S256",
+    checkLoginIframe: false,
+  });
+  return initialization;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -25,11 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    keycloak.init({
-      onLoad: "check-sso",
-      pkceMethod: "S256",
-      checkLoginIframe: false,
-    }).then((loggedIn) => {
+    initializeKeycloak().then((loggedIn) => {
       setAuthenticated(loggedIn);
       setRoles(roles());
       setName(keycloak.tokenParsed?.name ?? keycloak.tokenParsed?.preferred_username ?? "User");
