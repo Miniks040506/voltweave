@@ -126,6 +126,30 @@ final class PlatformClient {
         throw new IllegalStateException("Condition did not become true for " + path, lastFailure);
     }
 
+    JsonNode awaitPost(
+            String path,
+            String token,
+            String body,
+            int expectedStatus,
+            Map<String, String> headers,
+            Predicate<JsonNode> accepted,
+            Duration timeout
+    ) throws Exception {
+        Instant deadline = Instant.now().plus(timeout);
+        Response lastResponse = null;
+        while (Instant.now().isBefore(deadline)) {
+            lastResponse = send("POST", path, token, body, headers);
+            if (lastResponse.status() == expectedStatus) {
+                JsonNode responseBody = json.readTree(lastResponse.body());
+                if (accepted.test(responseBody)) return responseBody;
+            }
+            Thread.sleep(500);
+        }
+        throw new IllegalStateException(
+                "POST condition did not become true for " + path + ": " + lastResponse
+        );
+    }
+
     private JsonNode requireJson(Response response, int expectedStatus) throws IOException {
         if (response.status() != expectedStatus) {
             throw new IllegalStateException(

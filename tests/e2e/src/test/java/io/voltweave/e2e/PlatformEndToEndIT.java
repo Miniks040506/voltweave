@@ -2,8 +2,15 @@ package io.voltweave.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterAll;
@@ -27,7 +34,7 @@ class PlatformEndToEndIT {
     private final PlatformEnvironment environment = new PlatformEnvironment();
 
     private PlatformClient client;
-    private MqttDeviceRuntime simulator;
+    private final List<MqttDeviceRuntime> simulators = new ArrayList<>();
     private String adminToken;
     private String customerToken;
     private String operatorToken;
@@ -35,6 +42,10 @@ class PlatformEndToEndIT {
     private UUID operatorOrganizationId;
     private UUID siteId;
     private UUID deviceId;
+    private UUID vppId;
+    private UUID optimizationPreviewId;
+    private UUID dispatchId;
+    private Instant scheduledStartAt;
 
     @BeforeAll
     void startPlatform() throws Exception {
@@ -52,7 +63,7 @@ class PlatformEndToEndIT {
 
     @AfterAll
     void stopPlatform() throws Exception {
-        if (simulator != null) simulator.close();
+        simulators.reversed().forEach(MqttDeviceRuntime::close);
         environment.close();
     }
 
@@ -113,14 +124,7 @@ class PlatformEndToEndIT {
         JsonNode credential = provisioning.path("credential");
         assertThat(credential.isObject()).isTrue();
 
-        simulator = new MqttDeviceRuntime(
-                "tcp://127.0.0.1:" + environment.mqttPort(),
-                scenario(credential),
-                1,
-                JsonMapper.builder().build(),
-                Clock.systemUTC()
-        );
-        simulator.start();
+        startSimulator(scenario(deviceId, DeviceType.BATTERY, credential));
 
         JsonNode twin = client.awaitGet(
                 "/api/v1/devices/" + deviceId + "/twin",
@@ -132,6 +136,105 @@ class PlatformEndToEndIT {
         assertThat(twin.path("siteId").asString()).isEqualTo(siteId.toString());
         assertThat(twin.path("deviceType").asString()).isEqualTo("BATTERY");
         assertThat(twin.path("socPercent").asDouble()).isBetween(20.0, 90.0);
+    }
+
+    @Test
+    @Order(2)
+    void operatorBuildsAnIntelligencePlanAndSchedulesADispatch() throws Exception {
+        JsonNode meter = client.post("/api/v1/devices", customerToken, """
+                {
+                  "siteId": "%s",
+                  "externalDeviceId": "meter-e2e-01",
+                  "type": "SMART_METER",
+                  "manufacturer": "VoltWeave",
+                  "model": "Sandbox Meter",
+                  "ratedPowerKw": 30,
+                  "battery": null,
+                  "evCharger": null
+                }
+                """.formatted(siteId), 201);
+        UUID meterId = UUID.fromString(meter.path("id").asString());
+        JsonNode provisioning = client.post(
+                "/api/v1/devices/" + meterId + "/provision",
+                customerToken,
+                null,
+                201,
+                Map.of("Idempotency-Key", "e2e-provision-meter")
+        );
+        startSimulator(scenario(
+                meterId, DeviceType.SMART_METER, provisioning.path("credential")
+        ));
+        client.awaitGet(
+                "/api/v1/devices/" + meterId + "/twin",
+                customerToken,
+                body -> body.path("online").asBoolean(),
+                Duration.ofSeconds(45)
+        );
+
+        JsonNode vpp = client.post("/api/v1/vpps", operatorToken, """
+                {
+                  "organizationId": "%s",
+                  "name": "Bangkok E2E VPP",
+                  "region": "Bangkok"
+                }
+                """.formatted(operatorOrganizationId), 201);
+        vppId = UUID.fromString(vpp.path("id").asString());
+        client.post(
+                "/api/v1/vpps/" + vppId + "/sites/" + siteId,
+                operatorToken,
+                null,
+                201
+        );
+
+        scheduledStartAt = currentQuarterHour().plus(1, ChronoUnit.DAYS);
+        JsonNode forecast = client.awaitPost(
+                "/api/v1/vpps/" + vppId + "/forecast",
+                operatorToken,
+                """
+                        {"horizon": "MINUTES_15", "targetStart": "%s"}
+                        """.formatted(scheduledStartAt),
+                201,
+                Map.of(),
+                body -> body.path("points").size() == 1,
+                Duration.ofSeconds(60)
+        );
+        assertThat(forecast.path("points").get(0)
+                .path("baselineGridImportKw").asDouble()).isPositive();
+
+        JsonNode flexibility = client.awaitPost(
+                "/api/v1/vpps/" + vppId + "/flexibility",
+                operatorToken,
+                "{\"dispatchDurationMinutes\": 15}",
+                201,
+                Map.of(),
+                body -> body.path("upwardFlexibilityKw").asDouble() > 0,
+                Duration.ofSeconds(60)
+        );
+        assertThat(flexibility.path("candidates").size()).isGreaterThanOrEqualTo(1);
+        BigDecimal targetPower = flexibility.path("upwardFlexibilityKw").decimalValue()
+                .divide(BigDecimal.TWO, 3, RoundingMode.DOWN)
+                .max(new BigDecimal("0.001"));
+
+        JsonNode preview = client.post(
+                "/api/v1/vpps/" + vppId + "/optimization-preview",
+                operatorToken,
+                "{\"targetPowerKw\": %s, \"reserveMarginPercent\": 0}"
+                        .formatted(targetPower.toPlainString()),
+                200
+        );
+        assertThat(preview.path("feasible").asBoolean()).isTrue();
+        optimizationPreviewId = UUID.fromString(preview.path("id").asString());
+
+        JsonNode dispatch = client.post(
+                "/api/v1/dispatches",
+                operatorToken,
+                dispatchRequest(),
+                201,
+                Map.of("Idempotency-Key", "e2e-dispatch-01")
+        );
+        dispatchId = UUID.fromString(dispatch.path("id").asString());
+        assertThat(dispatch.path("status").asString()).isEqualTo("SCHEDULED");
+        assertThat(dispatch.path("allocations").size()).isGreaterThanOrEqualTo(1);
     }
 
     private UUID createOrganization(String type, String name, String tenantCode) throws Exception {
@@ -159,10 +262,22 @@ class PlatformEndToEndIT {
         );
     }
 
-    private DeviceScenario scenario(JsonNode credential) {
+    private void startSimulator(DeviceScenario scenario) throws Exception {
+        var simulator = new MqttDeviceRuntime(
+                "tcp://127.0.0.1:" + environment.mqttPort(),
+                scenario,
+                1,
+                JsonMapper.builder().build(),
+                Clock.systemUTC()
+        );
+        simulator.start();
+        simulators.add(simulator);
+    }
+
+    private DeviceScenario scenario(UUID id, DeviceType type, JsonNode credential) {
         return new DeviceScenario(
-                deviceId,
-                DeviceType.BATTERY,
+                id,
+                type,
                 new MqttCredential(
                         credential.path("username").asString(),
                         credential.path("password").asString(),
@@ -180,5 +295,22 @@ class PlatformEndToEndIT {
                 0.95,
                 31
         );
+    }
+
+    private String dispatchRequest() {
+        return """
+                {
+                  "vppId": "%s",
+                  "optimizationPreviewId": "%s",
+                  "type": "REDUCE_DEMAND",
+                  "scheduledStartAt": "%s",
+                  "durationMinutes": 15
+                }
+                """.formatted(vppId, optimizationPreviewId, scheduledStartAt);
+    }
+
+    private static Instant currentQuarterHour() {
+        Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        return Instant.ofEpochSecond(now.getEpochSecond() - now.getEpochSecond() % 900);
     }
 }
