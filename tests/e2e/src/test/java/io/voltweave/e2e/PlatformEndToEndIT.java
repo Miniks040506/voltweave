@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import io.voltweave.simulator.config.DeviceScenario;
 import io.voltweave.simulator.config.DeviceType;
@@ -350,6 +351,13 @@ class PlatformEndToEndIT {
             assertThat(metrics).contains("jvm_memory_used_bytes");
             assertThat(metrics).contains("application=\"" + serviceName(service) + "\"");
         }
+    }
+
+    @Test
+    @Order(6)
+    @EnabledIfSystemProperty(named = "voltweave.performance", matches = "true")
+    void authorizedReadApisMeetTheLocalLatencyBudget() throws Exception {
+        environment.runApiBenchmark(siteId, deviceId);
     }
 
     private UUID createOrganization(String type, String name, String tenantCode) throws Exception {

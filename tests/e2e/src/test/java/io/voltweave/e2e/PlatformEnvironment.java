@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 final class PlatformEnvironment implements AutoCloseable {
     private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(3);
@@ -80,6 +81,26 @@ final class PlatformEnvironment implements AutoCloseable {
         stopService("dispatch");
         startService("dispatch", "services/dispatch-service", "dispatch-service");
         waitForHealth("dispatch");
+    }
+
+    void runApiBenchmark(UUID siteId, UUID deviceId) throws Exception {
+        Path scripts = root.resolve("tests/performance");
+        run(List.of(
+                "docker", "run", "--rm",
+                "--add-host=host.docker.internal:host-gateway",
+                "-e", "BASE_URL=http://host.docker.internal:" + ports.get("gateway"),
+                "-e", "KEYCLOAK_URL=http://host.docker.internal:" + ports.get("keycloak")
+                        + "/realms/voltweave",
+                "-e", "KEYCLOAK_HOST=localhost:" + ports.get("keycloak"),
+                "-e", "SITE_ID=" + siteId,
+                "-e", "DEVICE_ID=" + deviceId,
+                "-e", "USERNAME=customer",
+                "-e", "PASSWORD",
+                "-e", "VUS=" + System.getProperty("performance.vus", "1"),
+                "-e", "DURATION=" + System.getProperty("performance.duration", "30s"),
+                "-v", scripts + ":/scripts:ro",
+                "grafana/k6:2.1.0", "run", "/scripts/api-read.js"
+        ), Duration.ofMinutes(12), Map.of("PASSWORD", "local-customer-change-me"));
     }
 
     private void startService(String name, String module, String artifact) throws IOException {
@@ -200,7 +221,15 @@ final class PlatformEnvironment implements AutoCloseable {
     }
 
     private static void run(List<String> command, Duration timeout) throws Exception {
-        Process process = new ProcessBuilder(command).inheritIO().start();
+        run(command, timeout, Map.of());
+    }
+
+    private static void run(
+            List<String> command, Duration timeout, Map<String, String> environment
+    ) throws Exception {
+        ProcessBuilder builder = new ProcessBuilder(command).inheritIO();
+        builder.environment().putAll(environment);
+        Process process = builder.start();
         if (!process.waitFor(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS)) {
             process.destroyForcibly();
             throw new IllegalStateException("Command timed out: " + String.join(" ", command));

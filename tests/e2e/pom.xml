@@ -55,6 +55,7 @@
                                 <configuration>
                                     <systemPropertyVariables>
                                         <voltweave.root>${maven.multiModuleProjectDirectory}</voltweave.root>
+                                        <voltweave.performance>${voltweave.performance}</voltweave.performance>
                                     </systemPropertyVariables>
                                 </configuration>
                             </execution>
@@ -62,6 +63,12 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>performance</id>
+            <properties>
+                <voltweave.performance>true</voltweave.performance>
+            </properties>
         </profile>
     </profiles>
 </project>
