@@ -1,5 +1,8 @@
 package io.voltweave.portfolio.access.application;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,5 +23,10 @@ public class AccessCheckService {
         return repository.findGrant(
                 command.subjectId().trim(), command.resourceType(), command.resourceId()
         ).orElseGet(AccessCheckResult::denied);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UUID> siteIdsForSubject(String subjectId) {
+        return repository.findSiteIdsForSubject(subjectId.trim());
     }
 }

@@ -117,6 +117,40 @@ class InternalAccessApiIntegrationTests {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void listsOnlySitesOwnedByTheRequestedSubject() throws Exception {
+        String customer = "reward-customer";
+        UUID organizationId = createOrganization(
+                customer, OrganizationType.COMMERCIAL_CUSTOMER, "reward"
+        );
+        var first = siteService.create(new CreateSiteCommand(
+                organizationId, "Home A", "Asia/Ho_Chi_Minh", "HCM", "VN"
+        ), customer).site();
+        var second = siteService.create(new CreateSiteCommand(
+                organizationId, "Home B", "Asia/Ho_Chi_Minh", "HCM", "VN"
+        ), customer).site();
+        UUID otherOrganization = createOrganization(
+                "other-customer", OrganizationType.COMMERCIAL_CUSTOMER, "other-reward"
+        );
+        siteService.create(new CreateSiteCommand(
+                otherOrganization, "Private Home", "Asia/Ho_Chi_Minh", "HCM", "VN"
+        ), "other-customer");
+
+        mockMvc.perform(post("/internal/v1/access-checks/sites")
+                        .with(jwt().jwt(token -> token
+                                .subject("settlement-service")
+                                .claim("azp", "voltweave-internal")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"subjectId":"reward-customer"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.siteIds.length()").value(2))
+                .andExpect(jsonPath("$.siteIds").value(org.hamcrest.Matchers.containsInAnyOrder(
+                        first.id().toString(), second.id().toString()
+                )));
+    }
+
     private void assertAllowed(
             String subjectId,
             String resourceType,

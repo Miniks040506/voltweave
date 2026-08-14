@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.voltweave.portfolio.access.api.request.AccessCheckRequest;
+import io.voltweave.portfolio.access.api.request.SubjectSitesRequest;
 import io.voltweave.portfolio.access.api.response.AccessCheckResponse;
+import io.voltweave.portfolio.access.api.response.SubjectSitesResponse;
 import io.voltweave.portfolio.access.application.AccessCheckService;
 
 @RestController
@@ -27,6 +29,15 @@ public class InternalAccessController {
     ) {
         return ResponseEntity.ok(AccessCheckResponse.from(
                 accessCheckService.check(request.toCommand())
+        ));
+    }
+
+    @PostMapping("/sites")
+    public ResponseEntity<SubjectSitesResponse> sites(
+            @Valid @RequestBody SubjectSitesRequest request
+    ) {
+        return ResponseEntity.ok(new SubjectSitesResponse(
+                accessCheckService.siteIdsForSubject(request.subjectId())
         ));
     }
 }

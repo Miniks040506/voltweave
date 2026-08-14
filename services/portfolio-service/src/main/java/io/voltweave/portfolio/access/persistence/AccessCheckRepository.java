@@ -1,5 +1,6 @@
 package io.voltweave.portfolio.access.persistence;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -47,5 +48,19 @@ public class AccessCheckRepository {
                         OrganizationRole.valueOf(resultSet.getString("role"))
                 ))
                 .optional();
+    }
+
+    public List<UUID> findSiteIdsForSubject(String subjectId) {
+        return jdbcClient.sql("""
+                SELECT site.id
+                FROM sites site
+                JOIN organization_members member
+                  ON member.organization_id = site.organization_id
+                 AND member.subject_id = :subjectId
+                 AND member.status = 'ACTIVE'
+                ORDER BY site.id
+                """)
+                .param("subjectId", subjectId)
+                .query(UUID.class).list();
     }
 }
