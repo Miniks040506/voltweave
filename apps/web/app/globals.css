@@ -202,6 +202,7 @@ td small { display: block; color: var(--muted); margin-top: 0.2rem; }
   .workspace { padding: 4rem clamp(2rem, 5vw, 5rem) 6rem; }
   .metric-grid { grid-template-columns: repeat(4, 1fr); }
   .content-grid { grid-template-columns: minmax(16rem, 0.7fr) minmax(0, 1.3fr); }
+  .content-grid.equal-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
