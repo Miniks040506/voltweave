@@ -133,6 +133,44 @@ button, a { -webkit-tap-highlight-color: transparent; }
   text-align: center;
 }
 
+.field { display: grid; gap: 0.45rem; color: var(--muted); font-size: 0.85rem; }
+.field select, .field input {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--foreground);
+  padding: 0.65rem 0.75rem;
+}
+.compact-field { width: min(100%, 24rem); margin-bottom: 1.5rem; }
+.notice, .empty-state, .panel, .metric {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.notice { margin-bottom: 1rem; padding: 0.9rem 1rem; }
+.empty-state { padding: clamp(2rem, 6vw, 4rem); text-align: center; }
+.empty-state h2 { margin-top: 0; }
+.empty-state p { color: var(--muted); }
+.metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+.metric { display: grid; gap: 0.55rem; padding: 1rem; }
+.metric span { color: var(--muted); font-size: 0.8rem; }
+.metric strong { font-size: clamp(1.25rem, 3vw, 1.8rem); letter-spacing: -0.035em; }
+.content-grid { display: grid; gap: 1rem; }
+.panel { min-width: 0; padding: 1.25rem; }
+.panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.panel-heading h2 { margin: 0.35rem 0 0; font-size: 1.2rem; }
+.badge { display: inline-flex; border-radius: 999px; background: var(--surface-muted); padding: 0.3rem 0.55rem; font-size: 0.68rem; font-weight: 700; }
+.detail-list { display: grid; gap: 0; margin: 0; }
+.detail-list div { display: flex; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--border); padding: 0.8rem 0; }
+.detail-list dt { color: var(--muted); }
+.detail-list dd { margin: 0; text-align: right; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th, td { border-bottom: 1px solid var(--border); padding: 0.75rem; text-align: left; white-space: nowrap; }
+th { color: var(--muted); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
+td small { display: block; color: var(--muted); margin-top: 0.2rem; }
+
 @media (min-width: 800px) {
   .app-frame { display: grid; grid-template-columns: 16rem minmax(0, 1fr); }
   .sidebar {
@@ -157,6 +195,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .account-block span { color: var(--muted); overflow-wrap: anywhere; }
   .account-block .text-button { align-self: flex-start; margin-top: 0.5rem; }
   .workspace { padding: 4rem clamp(2rem, 5vw, 5rem) 6rem; }
+  .metric-grid { grid-template-columns: repeat(4, 1fr); }
+  .content-grid { grid-template-columns: minmax(16rem, 0.7fr) minmax(0, 1.3fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {
