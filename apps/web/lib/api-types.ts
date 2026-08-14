@@ -68,7 +68,7 @@ export type Forecast = {
   targetStart: string;
   targetEnd: string;
   validUntil: string;
-  points: { forecastAt: string; gridImportKw: number }[];
+  points: { forecastAt: string; baselineGridImportKw: number; solarGenerationKw: number }[];
 };
 
 export type Flexibility = {
@@ -78,7 +78,12 @@ export type Flexibility = {
   validUntil: string;
   upwardFlexibilityKw: number;
   availableEnergyKwh: number;
-  candidates: { deviceId: string; deviceType: string; availablePowerKw: number; eligible: boolean }[];
+  candidates: {
+    deviceId: string;
+    deviceType: string;
+    upwardFlexibilityKw: number;
+    limitingReason: string | null;
+  }[];
 };
 
 export type Optimization = {

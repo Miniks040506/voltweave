@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth-provider";
-import { Dispatch, Flexibility, Forecast, Vpp } from "@/lib/api-types";
+import { Dispatch, Flexibility, Forecast, Optimization, Vpp } from "@/lib/api-types";
 
 export default function OperatorPage() {
   const { api, ready, authenticated } = useAuth();
@@ -12,6 +12,14 @@ export default function OperatorPage() {
   const [forecast, setForecast] = useState<Forecast | null>(null);
   const [flexibility, setFlexibility] = useState<Flexibility | null>(null);
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
+  const [targetStart, setTargetStart] = useState("");
+  const [duration, setDuration] = useState(30);
+  const [targetPower, setTargetPower] = useState(10);
+  const [reserveMargin, setReserveMargin] = useState(10);
+  const [preview, setPreview] = useState<Optimization | null>(null);
+  const [idempotencyKey, setIdempotencyKey] = useState("");
+  const [working, setWorking] = useState(false);
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,6 +46,79 @@ export default function OperatorPage() {
   }, [api, vppId]);
 
   const selected = vpps.find((vpp) => vpp.id === vppId);
+
+  async function prepare(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setWorking(true);
+    setError(null);
+    setMessage("");
+    setPreview(null);
+    try {
+      const start = new Date(targetStart).toISOString();
+      const nextForecast = await api<Forecast>(`/api/v1/vpps/${vppId}/forecast`, {
+        method: "POST",
+        body: JSON.stringify({ horizon: "HOUR_1", targetStart: start }),
+      });
+      const nextFlexibility = await api<Flexibility>(`/api/v1/vpps/${vppId}/flexibility`, {
+        method: "POST",
+        body: JSON.stringify({ dispatchDurationMinutes: duration }),
+      });
+      const nextPreview = await api<Optimization>(`/api/v1/vpps/${vppId}/optimization-preview`, {
+        method: "POST",
+        body: JSON.stringify({ targetPowerKw: targetPower, reserveMarginPercent: reserveMargin }),
+      });
+      setForecast(nextForecast);
+      setFlexibility(nextFlexibility);
+      setPreview(nextPreview);
+      setIdempotencyKey(crypto.randomUUID());
+      setMessage(nextPreview.feasible ? "Preview is ready for review." : "The requested target is not feasible.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not prepare dispatch inputs.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function confirmDispatch() {
+    if (!preview) return;
+    setWorking(true);
+    setError(null);
+    try {
+      const created = await api<Dispatch>("/api/v1/dispatches", {
+        method: "POST",
+        headers: { "Idempotency-Key": idempotencyKey },
+        body: JSON.stringify({
+          vppId,
+          optimizationPreviewId: preview.id,
+          type: "REDUCE_DEMAND",
+          scheduledStartAt: new Date(targetStart).toISOString(),
+          durationMinutes: duration,
+        }),
+      });
+      setDispatches((current) => [created, ...current]);
+      setPreview(null);
+      setMessage(`Dispatch ${created.id.slice(0, 8)} was scheduled.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not create dispatch.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function prepareCommands(dispatch: Dispatch) {
+    setWorking(true);
+    setError(null);
+    try {
+      const commands = await api<unknown[]>(`/api/v1/dispatches/${dispatch.id}/commands`, { method: "POST" });
+      const updated = await api<Dispatch>(`/api/v1/dispatches/${dispatch.id}`);
+      setDispatches((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setMessage(`${commands.length} device command${commands.length === 1 ? "" : "s"} prepared.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not prepare device commands.");
+    } finally {
+      setWorking(false);
+    }
+  }
 
   return (
     <AppShell
@@ -71,6 +152,24 @@ export default function OperatorPage() {
           <Metric label="Dispatches" value={String(dispatches.length)} />
         </section>
 
+        <section className="panel workflow-panel">
+          <div className="panel-heading"><div><p className="eyebrow">MANUAL CONTROL</p><h2>Prepare a dispatch</h2></div></div>
+          <form className="dispatch-form" onSubmit={prepare}>
+            <label className="field"><span>Start time</span><input type="datetime-local" step="900" value={targetStart} onChange={(event) => setTargetStart(event.target.value)} required /></label>
+            <label className="field"><span>Duration (minutes)</span><input type="number" min="15" max="1440" step="15" value={duration} onChange={(event) => setDuration(Number(event.target.value))} required /></label>
+            <label className="field"><span>Target power (kW)</span><input type="number" min="0.1" step="0.1" value={targetPower} onChange={(event) => setTargetPower(Number(event.target.value))} required /></label>
+            <label className="field"><span>Reserve margin (%)</span><input type="number" min="0" max="100" value={reserveMargin} onChange={(event) => setReserveMargin(Number(event.target.value))} required /></label>
+            <button className="primary-button" disabled={working}>Prepare inputs</button>
+          </form>
+          {preview && <div className="preview-strip" aria-live="polite">
+            <div><span>Required</span><strong>{Number(preview.requiredPowerKw).toFixed(1)} kW</strong></div>
+            <div><span>Planned</span><strong>{Number(preview.plannedPowerKw).toFixed(1)} kW</strong></div>
+            <div><span>Devices</span><strong>{preview.candidates.filter((item) => item.eligible).length}</strong></div>
+            <button className="primary-button" disabled={working || !preview.feasible} onClick={() => void confirmDispatch()}>Confirm dispatch</button>
+          </div>}
+          {message && <p className="status" aria-live="polite">{message}</p>}
+        </section>
+
         <div className="content-grid equal-columns">
           <section className="panel">
             <div className="panel-heading"><div><p className="eyebrow">INTELLIGENCE</p><h2>Latest operating inputs</h2></div></div>
@@ -78,7 +177,7 @@ export default function OperatorPage() {
               <div><dt>Forecast</dt><dd>{forecast ? `v${forecast.version} · ${forecast.modelName}` : "Not generated"}</dd></div>
               <div><dt>Forecast valid until</dt><dd>{formatTime(forecast?.validUntil)}</dd></div>
               <div><dt>Flexibility</dt><dd>{flexibility ? `v${flexibility.version}` : "Not generated"}</dd></div>
-              <div><dt>Eligible devices</dt><dd>{flexibility?.candidates.filter((item) => item.eligible).length ?? 0}</dd></div>
+              <div><dt>Eligible devices</dt><dd>{flexibility?.candidates.filter((item) => item.limitingReason === null).length ?? 0}</dd></div>
             </dl>
           </section>
 
@@ -86,12 +185,13 @@ export default function OperatorPage() {
             <div className="panel-heading"><div><p className="eyebrow">HISTORY</p><h2>Recent dispatches</h2></div></div>
             {dispatches.length === 0 ? <p className="text-muted">No dispatch has been prepared for this VPP.</p> : (
               <div className="table-wrap"><table>
-                <thead><tr><th>Start</th><th>Target</th><th>Planned</th><th>Status</th></tr></thead>
+                <thead><tr><th>Start</th><th>Target</th><th>Planned</th><th>Status</th><th>Action</th></tr></thead>
                 <tbody>{dispatches.map((dispatch) => <tr key={dispatch.id}>
                   <td>{formatTime(dispatch.scheduledStartAt)}</td>
                   <td>{Number(dispatch.targetPowerKw).toFixed(1)} kW</td>
                   <td>{Number(dispatch.plannedPowerKw).toFixed(1)} kW</td>
                   <td><span className="badge">{dispatch.status}</span></td>
+                  <td>{dispatch.status === "SCHEDULED" ? <button className="text-button" disabled={working} onClick={() => void prepareCommands(dispatch)}>Prepare commands</button> : "Prepared"}</td>
                 </tr>)}</tbody>
               </table></div>
             )}
