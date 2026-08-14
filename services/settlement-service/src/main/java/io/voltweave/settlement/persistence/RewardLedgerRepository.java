@@ -63,6 +63,16 @@ public class RewardLedgerRepository {
                 .query((row, rowNumber) -> map(row)).list();
     }
 
+    public List<RewardLedgerEntry> findBySettlementId(UUID settlementId) {
+        return jdbcClient.sql("""
+                SELECT * FROM reward_ledger_entries
+                WHERE settlement_id = :settlementId
+                ORDER BY created_at, id
+                """)
+                .param("settlementId", settlementId)
+                .query((row, rowNumber) -> map(row)).list();
+    }
+
     public void lockAdjustmentIdempotency(UUID organizationId, String key) {
         jdbcClient.sql("SELECT pg_advisory_xact_lock(hashtextextended(:scope, 0))")
                 .param("scope", organizationId + ":" + ADJUST_OPERATION + ":" + key)

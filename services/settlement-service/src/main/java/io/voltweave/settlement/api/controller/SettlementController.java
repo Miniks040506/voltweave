@@ -4,6 +4,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +23,7 @@ import io.voltweave.settlement.api.response.RewardAdjustmentResponse;
 import io.voltweave.settlement.api.response.SettlementResponse;
 import io.voltweave.settlement.application.RewardApplicationService;
 import io.voltweave.settlement.application.SettlementApplicationService;
+import io.voltweave.settlement.application.SettlementCsvReportService;
 import io.voltweave.settlement.application.model.Settlement;
 import jakarta.validation.Valid;
 
@@ -29,16 +32,36 @@ import jakarta.validation.Valid;
 public class SettlementController {
     private final SettlementApplicationService service;
     private final RewardApplicationService rewardService;
+    private final SettlementCsvReportService csvReportService;
     private final PortfolioAccessClient accessClient;
 
     public SettlementController(
             SettlementApplicationService service,
             RewardApplicationService rewardService,
+            SettlementCsvReportService csvReportService,
             PortfolioAccessClient accessClient
     ) {
         this.service = service;
         this.rewardService = rewardService;
+        this.csvReportService = csvReportService;
         this.accessClient = accessClient;
+    }
+
+    @GetMapping("/api/v1/reports/dispatches/{dispatchId}.csv")
+    public ResponseEntity<String> csv(
+            @PathVariable UUID dispatchId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Settlement settlement = service.findByDispatch(dispatchId).orElse(null);
+        if (settlement == null) {
+            return ResponseEntity.notFound().build();
+        }
+        requireAccess(jwt, settlement);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=dispatch-" + dispatchId + "-settlement.csv")
+                .body(csvReportService.create(settlement));
     }
 
     @PostMapping("/api/v1/settlements/{settlementId}/adjustments")

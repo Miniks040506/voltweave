@@ -6,6 +6,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
@@ -184,6 +186,27 @@ class SettlementWorkflowIntegrationTests {
                                 {"siteId":"%s","amount":1.0000,"reason":"Wrong site"}
                                 """.formatted(UUID.randomUUID())))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void exportsAnAuthorizedDispatchSettlementAsCsv() throws Exception {
+        when(dispatchClient.input(DISPATCH_ID)).thenReturn(input());
+        consumer.consume(completionRecord());
+        when(portfolioAccessClient.requireVppAccess("operator", VPP_ID))
+                .thenReturn(ORGANIZATION_ID);
+
+        mockMvc.perform(get("/api/v1/reports/dispatches/{id}.csv", DISPATCH_ID)
+                        .with(operatorJwt()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/csv"))
+                .andExpect(header().string("Content-Disposition",
+                        "attachment; filename=dispatch-" + DISPATCH_ID + "-settlement.csv"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "expected_energy_kwh,delivered_energy_kwh,achievement_percent"
+                )))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        SITE_ID + ",10.000000,9.500000,95.000,2.3750,VWC"
+                )));
     }
 
     private ConsumerRecord<String, String> completionRecord() throws Exception {

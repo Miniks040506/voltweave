@@ -30,7 +30,7 @@ spring:
             - id: settlement-public
               uri: ${SETTLEMENT_SERVICE_URL:http://localhost:8085}
               predicates:
-                - Path=/api/v1/settlements/**,/api/v1/dispatches/*/settlements
+                - Path=/api/v1/settlements/**,/api/v1/dispatches/*/settlements,/api/v1/customers/me/earnings,/api/v1/reports/dispatches/*.csv
             - id: dispatch-public
               uri: ${DISPATCH_SERVICE_URL:http://localhost:8084}
               predicates:
