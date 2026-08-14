@@ -18,7 +18,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 final class PlatformClient {
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
     private final PlatformEnvironment environment;
     private final HttpClient http = HttpClient.newBuilder()

@@ -101,7 +101,7 @@ final class PlatformEnvironment implements AutoCloseable {
                 Map.entry("SETTLEMENT_DB_URL", postgres + "settlement_db"),
                 Map.entry("SETTLEMENT_DB_PASSWORD", "local-settlement-change-me"),
                 Map.entry("KAFKA_BOOTSTRAP_SERVERS", "localhost:" + ports.get("kafka")),
-                Map.entry("MQTT_BROKER_URI", "tcp://localhost:" + ports.get("mqtt")),
+                Map.entry("MQTT_BROKER_URI", "tcp://127.0.0.1:" + ports.get("mqtt")),
                 Map.entry("MQTT_ADMIN_USERNAME", "voltweave-provisioner"),
                 Map.entry("MQTT_ADMIN_PASSWORD", "local-mqtt-admin-change-me"),
                 Map.entry("MQTT_TELEMETRY_USERNAME", "telemetry-service"),

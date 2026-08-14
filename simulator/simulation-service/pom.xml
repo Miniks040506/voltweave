@@ -49,6 +49,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>io.voltweave.simulator.SimulatorApplication</mainClass>
+                    <classifier>exec</classifier>
                 </configuration>
             </plugin>
         </plugins>

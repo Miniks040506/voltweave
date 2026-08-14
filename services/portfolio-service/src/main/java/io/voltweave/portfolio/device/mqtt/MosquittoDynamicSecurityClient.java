@@ -129,6 +129,7 @@ public class MosquittoDynamicSecurityClient implements MqttBrokerAdmin {
             options.setPassword(password.toCharArray());
             options.setAutomaticReconnect(false);
             options.setCleanSession(true);
+            options.setConnectionTimeout((int) RESPONSE_TIMEOUT.toSeconds());
             client.connect(options);
             client.subscribe(RESPONSE_TOPIC, 1, (topic, message) -> {
                 response.set(new String(message.getPayload(), UTF_8));
@@ -157,7 +158,7 @@ public class MosquittoDynamicSecurityClient implements MqttBrokerAdmin {
         }
         try {
             if (client.isConnected()) {
-                client.disconnectForcibly();
+                client.disconnect(1_000);
             }
             client.close(true);
         } catch (MqttException ignored) {

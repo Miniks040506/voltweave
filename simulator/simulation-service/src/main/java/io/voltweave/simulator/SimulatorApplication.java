@@ -16,7 +16,7 @@ public final class SimulatorApplication {
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
-            System.err.println("Usage: java -jar simulation-service.jar <scenario.json>");
+            System.err.println("Usage: java -jar simulation-service-exec.jar <scenario.json>");
             System.exit(2);
         }
 
