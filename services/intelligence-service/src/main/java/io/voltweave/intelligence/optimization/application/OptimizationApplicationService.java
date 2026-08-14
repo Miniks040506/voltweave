@@ -209,8 +209,7 @@ public class OptimizationApplicationService {
     }
 
     private static boolean eligible(FlexibilityCandidate candidate) {
-        return candidate.limitingReason() == null
-                && candidate.upwardFlexibilityKw().signum() > 0;
+        return candidate.upwardFlexibilityKw().signum() > 0;
     }
 
     private static double availableSoc(FlexibilityCandidate candidate, BigDecimal maxEnergy) {

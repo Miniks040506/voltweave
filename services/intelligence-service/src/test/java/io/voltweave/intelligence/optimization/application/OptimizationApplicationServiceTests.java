@@ -61,7 +61,8 @@ class OptimizationApplicationServiceTests {
     void ranksEligibleCandidatesAndAllocatesReserveMargin() {
         when(flexibilityRepository.latest(ORGANIZATION_ID, VPP_ID))
                 .thenReturn(Optional.of(snapshot(NOW.plusSeconds(60), List.of(
-                        candidate("00000000-0000-0000-0000-000000000002", "BATTERY", "4", "4", null),
+                        candidate("00000000-0000-0000-0000-000000000002", "BATTERY", "4", "4",
+                                "SITE_IMPORT_LIMIT"),
                         candidate("00000000-0000-0000-0000-000000000001", "EV_CHARGER", "4", "2", null),
                         candidate("00000000-0000-0000-0000-000000000003", "BATTERY", "0", "0", "SITE_OPTED_OUT")
                 ))));
@@ -76,6 +77,7 @@ class OptimizationApplicationServiceTests {
         assertEquals("00000000-0000-0000-0000-000000000002",
                 result.candidates().getFirst().deviceId().toString());
         assertEquals(new BigDecimal("4.000"), result.candidates().getFirst().allocatedPowerKw());
+        assertTrue(result.candidates().getFirst().eligible());
         assertFalse(result.candidates().getLast().eligible());
 
         var previewCaptor = ArgumentCaptor.forClass(OptimizationPreview.class);
