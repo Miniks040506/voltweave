@@ -1,8 +1,33 @@
 @import "tailwindcss";
 
 :root {
-  --background: #08110e;
-  --foreground: #eef7f0;
+  --background: #f2f4ef;
+  --surface: #ffffff;
+  --surface-muted: #e8ece5;
+  --foreground: #142019;
+  --muted: #607067;
+  --border: #ccd5cd;
+  --accent: #087c52;
+  --accent-strong: #05613f;
+  --accent-contrast: #ffffff;
+  --danger: #b42318;
+  --radius-card: 14px;
+  --radius-control: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #09110d;
+    --surface: #111b15;
+    --surface-muted: #18251d;
+    --foreground: #eef5ef;
+    --muted: #a1b1a6;
+    --border: #2b3b31;
+    --accent: #51d69a;
+    --accent-strong: #74e5ae;
+    --accent-contrast: #07150e;
+    --danger: #ff8a80;
+  }
 }
 
 @theme inline {
@@ -12,8 +37,128 @@
   --font-mono: var(--font-geist-mono);
 }
 
+* { box-sizing: border-box; }
+html { min-height: 100%; }
 body {
+  min-height: 100vh;
+  margin: 0;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
+}
+button, input, select { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+.text-muted { color: var(--muted); }
+.eyebrow {
+  color: var(--accent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.18em;
+}
+.primary-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  padding: 0.7rem 1rem;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+.primary-button:hover { background: var(--accent-strong); }
+.text-button, .text-link {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+.status { color: var(--muted); }
+.error-message { color: var(--danger); }
+
+.app-frame { min-height: 100vh; }
+.sidebar {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0.9rem 1.25rem;
+}
+.brand {
+  color: var(--foreground);
+  font-size: 1.1rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+}
+.workspace-nav { display: flex; flex: 1; gap: 0.25rem; overflow-x: auto; }
+.workspace-nav a {
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  padding: 0.55rem 0.7rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.workspace-nav a[aria-current="page"] { background: var(--surface-muted); color: var(--foreground); }
+.account-block { display: flex; }
+.account-block strong, .account-block span { display: none; }
+.workspace { width: min(100%, 92rem); margin: 0 auto; padding: 2rem 1.25rem 5rem; }
+.workspace-header { max-width: 48rem; margin-bottom: 2rem; }
+.workspace-header h1 {
+  margin: 0.7rem 0 0.6rem;
+  font-size: clamp(2rem, 5vw, 3.6rem);
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+.workspace-header > p:last-child { color: var(--muted); line-height: 1.7; }
+.centered-state {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+@media (min-width: 800px) {
+  .app-frame { display: grid; grid-template-columns: 16rem minmax(0, 1fr); }
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    flex-direction: column;
+    align-items: stretch;
+    border-right: 1px solid var(--border);
+    border-bottom: 0;
+    padding: 1.5rem;
+  }
+  .workspace-nav { flex: 0; flex-direction: column; margin-top: 2rem; overflow: visible; }
+  .account-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: auto;
+    font-size: 0.82rem;
+  }
+  .account-block strong, .account-block span { display: block; }
+  .account-block span { color: var(--muted); overflow-wrap: anywhere; }
+  .account-block .text-button { align-self: flex-start; margin-top: 0.5rem; }
+  .workspace { padding: 4rem clamp(2rem, 5vw, 5rem) 6rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; }
 }
