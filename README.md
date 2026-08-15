@@ -1,122 +1,136 @@
 # VoltWeave
 
-VoltWeave is a virtual power plant sandbox. It will simulate household energy
-assets, forecast flexibility, dispatch devices and settle rewards without
-requiring physical power hardware.
+VoltWeave is a runnable virtual power plant sandbox. It models customer energy
+assets, ingests simulated telemetry, forecasts flexibility, schedules dispatches,
+tracks delivery and settles rewards without physical power hardware.
 
-The repository currently contains the first runnable foundations:
+## V1 architecture
 
-- `services/portfolio-service`: Spring Boot service with Flyway-managed
-  organization and membership persistence.
-- `services/intelligence-service`: pure Java battery, EV and deterministic
-  allocation domain rules.
-- `services/settlement-service`: pure Java delivered-energy integration.
-- `apps/web`: Next.js web application.
-- `docs/VOLTWEAVE_V1_PLAN.md`: V1 architecture and delivery plan.
+| Component | Responsibility |
+|---|---|
+| Web | Customer, operator and administrator journeys |
+| API Gateway | Public routing, JWT validation and correlation IDs |
+| Portfolio | Organizations, sites, devices, VPPs and access ownership |
+| Telemetry | MQTT ingestion, validation, TimescaleDB history and durable twins |
+| Intelligence | Forecast baselines, flexibility and deterministic optimization |
+| Dispatch | Manual/automatic dispatch, commands, ACKs and recovery |
+| Settlement | Immutable settlement inputs, rewards, ledger and CSV reports |
+| Simulator | Deterministic meter, solar, battery and EV device behavior |
 
-Deployable services are introduced with their first real behavior rather than
-as empty scaffolding.
+Services communicate synchronously through authenticated HTTP where an immediate
+answer is required and asynchronously through Kafka for lifecycle events. Each
+service owns its PostgreSQL database and Flyway migrations.
 
 ## Requirements
 
-- Java 21
-- Node.js 24
-- npm 11+
 - Docker Desktop or Docker Engine with Compose
+- PowerShell 7+
+- Java 21 only when running tests or the simulator outside Docker
+- Node.js 24 only when developing the web application outside Docker
 
-Maven does not need to be installed globally; use the included wrapper.
+## Start the complete platform
 
-## Run the platform sandbox
-
-PostgreSQL/TimescaleDB and Keycloak run locally in Docker:
+From a clean checkout:
 
 ```powershell
 Copy-Item infrastructure/compose/.env.example infrastructure/compose/.env
-infrastructure/compose/verify.ps1
+.\infrastructure\compose\release.ps1
 ```
 
-The verification script starts both containers, waits for their health checks,
-then verifies database ownership, restricted roles, TimescaleDB isolation,
-OIDC discovery, seeded roles/users and both OAuth clients. Local `.env` is
-ignored by Git; replace its example passwords before sharing the machine.
+Change every `local-*-change-me` value in `.env` before sharing the environment.
+The script builds seven application images, starts the dependency graph, waits for
+health checks, verifies authentication boundaries and calls an authorized route
+through Gateway.
 
-Useful endpoints and ports:
+Open `http://localhost:3000`. Demo users are `customer`, `operator` and `admin`;
+their local passwords are defined in `.env`.
 
-| Component | Address | Purpose |
-|---|---|---|
-| Web | `http://localhost:3000` | Browser application |
-| API Gateway | `http://localhost:8080` | Reserved for the future public entry point |
-| Portfolio | `http://localhost:8081` | Direct service port during development |
-| Keycloak | `http://localhost:8180` | Login and identity administration |
-| PostgreSQL | `127.0.0.1:6543` | Local database access |
+## Create runnable demo data
 
-Portfolio uses `8081` because `8080` is intentionally reserved for the API
-Gateway. Once the gateway exists, the frontend will call `8080`; direct service
-ports remain useful for local debugging and are not exposed publicly.
+```powershell
+.\infrastructure\compose\demo.ps1
+.\mvnw.cmd -pl simulator/simulation-service -am -DskipTests package
+java -jar simulator/simulation-service/target/simulation-service-0.1.0-SNAPSHOT-exec.jar `
+  simulator/simulation-service/scenario.local.json
+```
 
-Stop the sandbox without deleting its data:
+The seed script creates new customer/operator organizations, memberships, an
+opted-in battery site, a provisioned battery and a VPP membership. It writes the
+one-time MQTT credential to ignored `scenario.local.json`; do not commit or share
+that file. Keep the simulator process running while demonstrating live telemetry
+and dispatch commands.
+
+## Local endpoints
+
+| Component | URL |
+|---|---|
+| Web | `http://localhost:3000` |
+| API Gateway | `http://localhost:8080` |
+| Portfolio debug/metrics | `http://localhost:8081` |
+| Telemetry debug/metrics | `http://localhost:8082` |
+| Intelligence debug/metrics | `http://localhost:8083` |
+| Dispatch debug/metrics | `http://localhost:8084` |
+| Settlement debug/metrics | `http://localhost:8085` |
+| Keycloak | `http://localhost:8180` |
+| PostgreSQL | `127.0.0.1:6543` |
+| Kafka | `127.0.0.1:9092` |
+| MQTT | `127.0.0.1:1883` |
+
+Direct service ports bind to `127.0.0.1` for local debugging. Browser/API clients
+should use Gateway on port 8080.
+
+## Observability
+
+Start the optional Prometheus and Grafana profile alongside the application:
 
 ```powershell
 docker compose --env-file infrastructure/compose/.env `
-  -f infrastructure/compose/compose.yml down
+  -f infrastructure/compose/compose.yml `
+  --profile app --profile observability up -d --wait
 ```
 
-Keycloak imports a realm only when it does not already exist. To deliberately
-rebuild all local databases and re-import the realm, add `--volumes` to the
-`down` command; that permanently deletes the sandbox data.
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3001`
+- Dashboard: `VoltWeave V1 Acceptance`
 
-## Run the backend
+## Stop and restart
 
-Start the platform sandbox first, then run Portfolio on Windows PowerShell:
+Stop containers while keeping database, Kafka and MQTT data:
 
 ```powershell
-.\infrastructure\compose\verify.ps1
-.\mvnw.cmd -pl services/portfolio-service spring-boot:run
+docker compose --env-file infrastructure/compose/.env `
+  -f infrastructure/compose/compose.yml --profile app down
 ```
 
-The service starts on port `8081`. Check it at
-`http://localhost:8081/actuator/health`.
+Run `release.ps1 -NoBuild` to restart existing images. Do not add `--volumes`
+unless you intentionally want to permanently delete the sandbox state.
 
-Flyway applies pending Portfolio migrations during startup. Organization HTTP
-endpoints are intentionally added with JWT authorization in Task 5; the current
-public HTTP surface contains only Actuator health and info endpoints.
-
-## Run the frontend
-
-```powershell
-cd apps/web
-npm ci
-npm run dev
-```
-
-Open `http://localhost:3000`.
-
-## Verify the repository
-
-Backend:
+## Verification
 
 ```powershell
 .\mvnw.cmd --batch-mode verify
-```
 
-Portfolio integration tests start PostgreSQL 18 through Testcontainers, so
-Docker must be running. Tests never write to the local Compose database.
-
-Frontend:
-
-```powershell
 cd apps/web
 npm ci
 npm run lint
 npm run build
-npm audit
+npm audit --omit=dev
 ```
 
-The same backend and frontend checks run in GitHub Actions for every pull
-request and every push to `main`.
+Full cross-service E2E and the k6 latency baseline are opt-in:
 
-## Specifications
+```powershell
+.\mvnw.cmd "-Pe2e" verify
+.\mvnw.cmd "-Pe2e,performance" verify
+```
 
+## Documentation
+
+- [V1 runbook](docs/V1_RUNBOOK.md)
+- [V1 demo](docs/V1_DEMO.md)
 - [V1 delivery plan](docs/VOLTWEAVE_V1_PLAN.md)
 - [Original SRS](docs/GridMind_SRS.md)
 - [Full target-system SRS](docs/GridMind_FULL_Production_SRS.md)
+
+Kubernetes, multi-region deployment, real market/payment integrations and physical
+device certification are intentionally outside V1.
