@@ -5,7 +5,8 @@
 **Version:** 1.0  
 **Document Type:** Software Requirements Specification  
 **Target Stack:** Spring Boot Microservices + React/Next.js  
-**Primary Goal:** Portfolio-grade distributed system with a realistic path toward a commercial Virtual Power Plant (VPP) platform
+**Status:** V1 requirements reference
+**Primary Goal:** Production-oriented distributed system with a realistic path toward a commercial Virtual Power Plant (VPP) platform
 
 ---
 
@@ -143,11 +144,11 @@ VoltWeave V1 supports:
 22. Notifications.
 23. Audit logs.
 24. System observability.
-25. Simulation mode for portfolio demonstration.
+25. Simulation mode for repeatable acceptance testing.
 
 ## 4.2 Out of Scope — Initial Version
 
-The initial portfolio release will not directly control real physical electricity infrastructure.
+The initial V1 release will not directly control real physical electricity infrastructure.
 
 Instead:
 
@@ -363,7 +364,7 @@ flowchart TB
 
 ### Recommended Approach
 
-For portfolio V1:
+For V1:
 
 - Keycloak for identity provider
 - VoltWeave Identity Service stores VoltWeave-specific user profile data
@@ -1915,7 +1916,7 @@ Use last available weather forecast
 
 # 49. Device Simulator
 
-A device simulator is mandatory for the portfolio demo.
+A device simulator is mandatory for local acceptance testing.
 
 It should simulate:
 
@@ -1979,7 +1980,7 @@ flowchart LR
 
 ---
 
-# 51. Portfolio Demo Scenario
+# 51. End-to-End Demo Scenario
 
 A strong live demo should follow this flow.
 
@@ -2877,7 +2878,7 @@ This separation is one of the key reasons for using microservices and asynchrono
 
 ---
 
-# 70. Load Model for Portfolio Testing
+# 70. Load Model for Local Testing
 
 Suggested synthetic environment:
 
@@ -3154,7 +3155,7 @@ Flexibility
 
 Once the MVP works, extract the highest-change/highest-load modules into independent services.
 
-This prevents the common portfolio mistake of creating many tiny services with no meaningful distributed behavior.
+This prevents fragmentation into many tiny services with no meaningful distributed behavior.
 
 ---
 

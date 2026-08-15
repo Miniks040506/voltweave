@@ -2,7 +2,7 @@
 ## Autonomous Distributed Energy Orchestration Platform
 
 **Document:** V1 Product, System Design, Architecture and Delivery Plan  
-**Status:** Implemented
+**Status:** Implemented V1 baseline
 **Date:** 2026-08-15
 
 > Weave distributed energy resources into one adaptive virtual power plant.
@@ -52,7 +52,7 @@ V1 is **production-shaped, not utility-production-certified**:
 - Real time-series persistence and realtime dashboard.
 - Deterministic forecasting, constrained allocation and feedback control.
 - Simulated DERs and simulated tariff/grid signals.
-- Docker Compose acceptance environment and a Kubernetes deployment profile.
+- Docker Compose acceptance and release environment.
 
 V1 does not directly control physical electrical equipment or participate in a real electricity market.
 
@@ -143,7 +143,7 @@ Safety constraints always override optimization and automation.
 - Multi-region active-active deployment.
 - Separate services for identity profile, digital twin, command, performance, audit, configuration, scheduling, notification and reporting.
 - PDF/XLSX generation; V1 exports CSV and JSON.
-- Helm and Terraform; Docker Compose and Kubernetes/Kustomize are sufficient.
+- Kubernetes, Kustomize, Helm and Terraform; Docker Compose is the V1 release boundary.
 
 ---
 
@@ -181,13 +181,13 @@ The 27 target services from the production SRS are consolidated into six backend
 |---|---|---|
 | `api-gateway` | Public routing, JWT validation, rate limiting, correlation ID | None |
 | `portfolio-service` | Organizations, memberships, sites, devices, preferences, VPPs, automation policies, audit projection | `portfolio_db` |
-| `telemetry-service` | MQTT ingress, validation, normalization, telemetry history, latest twins, aggregates, SSE | `telemetry_db`, Redis cache |
+| `telemetry-service` | MQTT ingress, validation, normalization, telemetry history, latest twins and aggregates | `telemetry_db` |
 | `intelligence-service` | Tariffs, weather, forecasts, flexibility snapshots, weighted optimization | `intelligence_db` |
 | `dispatch-service` | Dispatch state machine, allocations, command lifecycle, delivery performance, rebalancing | `dispatch_db` |
 | `settlement-service` | Baselines, delivered energy, settlement, immutable reward ledger, CSV reports | `settlement_db` |
 | `simulation-service` | Synthetic devices, demand/solar profiles and fault injection | Scenario files only |
 
-Keycloak, Kafka, Mosquitto, PostgreSQL/TimescaleDB and Redis are platform dependencies, not custom microservices.
+Keycloak, Kafka, Mosquitto and PostgreSQL/TimescaleDB are platform dependencies, not custom microservices.
 
 ## 3.3 Container architecture
 
@@ -205,7 +205,6 @@ flowchart TB
     MQTT[(Mosquitto MQTT)]
     K[(Kafka KRaft)]
     PG[(PostgreSQL + TimescaleDB)]
-    R[(Redis)]
 
     FE <--> KC
     FE --> GW
@@ -228,9 +227,6 @@ flowchart TB
     INT --> PG
     DSP --> PG
     SET --> PG
-    TEL <--> R
-    GW --> R
-
     INT --> DSP
     DSP --> TEL
 ```
@@ -485,7 +481,6 @@ sequenceDiagram
     participant T as Telemetry Service
     participant K as Kafka
     participant DB as TimescaleDB
-    participant R as Redis
     participant UI as Dashboard
 
     D->>M: telemetry(deviceId, sequence)
@@ -494,9 +489,9 @@ sequenceDiagram
     K->>T: consume raw
     T->>T: validate, normalize, deduplicate
     T->>DB: persist accepted point
-    T->>R: update latest twin
+    T->>DB: update durable latest twin
     T->>K: telemetry.normalized
-    T-->>UI: authorized SSE update
+    UI->>T: authorized latest-twin query
 ```
 
 ## 6.2 Automated dispatch flow
@@ -533,7 +528,6 @@ sequenceDiagram
 |---|---|
 | Kafka unavailable after DB commit | Outbox remains pending and republishes later |
 | Duplicate Kafka event | Inbox/unique business key makes processing harmless |
-| Redis lost | Latest twins rebuild from durable accepted telemetry |
 | Device offline | Excluded from new allocations; active dispatch may rebalance |
 | Command timeout | Retry within validity window, then fail and rebalance |
 | Dispatch service restart | Reload active state and resume from persisted deadlines |
@@ -652,15 +646,11 @@ Local development uses one PostgreSQL/TimescaleDB server with separate databases
 - Continuous aggregate/downsampling jobs run inside TimescaleDB.
 - Retention values remain configurable because real deployments have different cost and compliance requirements.
 
-## 9.3 Redis
+## 9.3 Latest-state projection
 
-Redis stores only rebuildable data:
-
-- Latest device/site/VPP state.
-- Short-lived authorized SSE fanout data.
-- Gateway rate-limit counters.
-
-Redis is never the source of truth for dispatch or rewards.
+The latest device twin is stored durably in `telemetry_db`. The V1 web application
+uses authenticated HTTP reads; a cache or realtime fanout layer should only be
+introduced after measured load justifies it.
 
 ---
 
@@ -678,22 +668,21 @@ Versions are pinned in the repository and updated deliberately, not automaticall
 | Migrations | Flyway |
 | Event streaming | Apache Kafka 4.3.x in KRaft mode |
 | IoT | Eclipse Mosquitto 2.x / MQTT 5 |
-| Cache | Redis 8.x |
 | Identity | Keycloak 26.7.x |
-| Frontend | Next.js 16.3.x, React, TypeScript, Tailwind CSS, Apache ECharts |
-| Observability | OpenTelemetry Java Agent, Micrometer, Prometheus, Grafana, Tempo, Loki |
-| Testing | JUnit 5, AssertJ, Testcontainers, Playwright, k6 |
-| Delivery | Docker, Docker Compose, Kubernetes + Kustomize, GitHub Actions, Trivy |
+| Frontend | Next.js 16.3.x, React, TypeScript, Tailwind CSS |
+| Observability | Micrometer, Prometheus, Grafana, ECS structured logging |
+| Testing | JUnit 5, AssertJ, Testcontainers, Maven Failsafe, k6 |
+| Delivery | Docker, Docker Compose, GitHub Actions, Gitleaks |
 
 Implementation rules:
 
-- Use Spring MVC by default; realtime browser updates use SSE.
+- Use Spring MVC and authenticated HTTP reads for the V1 browser application.
 - Use synchronous REST only for request/response queries that require an immediate answer.
 - Use Kafka for durable domain facts and asynchronous workflow transitions.
 - Use database constraints for uniqueness and referential rules inside a service boundary.
 - Use Resilience4j only around real external provider calls.
 - Keep scheduled jobs inside the service that owns the data; use PostgreSQL advisory locks when more than one replica may run the same job.
-- Do not introduce a service registry; Compose DNS and Kubernetes Services already provide discovery.
+- Do not introduce a service registry; Compose DNS already provides discovery.
 - Do not create a shared domain-model library. Only event schemas and test utilities may be shared.
 
 ---
@@ -779,10 +768,10 @@ Expected solo effort is **14–18 weeks full-time** or **5–7 months part-time*
 
 - Implement raw topic, validation, normalization, deduplication and quarantine.
 - Store accepted points in TimescaleDB.
-- Maintain durable twins plus Redis hot projections.
-- Stream authorized updates through SSE.
+- Maintain durable latest-device twins.
+- Expose tenant-authorized telemetry reads through Gateway.
 
-**Exit:** live dashboard data updates in under two seconds and survives Redis reset after rebuild.
+**Exit:** accepted telemetry and the latest twin survive service restart.
 
 ## M5 — Forecast and flexibility
 
@@ -859,7 +848,6 @@ Expected solo effort is **14–18 weeks full-time** or **5–7 months part-time*
 
 - Produce non-root multi-stage images.
 - Make `docker compose up` the primary acceptance path.
-- Add Kubernetes/Kustomize deployment with probes, resources and secret references.
 - Write runbooks, ADRs, demo script and record a short video.
 
 **Exit:** a new reviewer can clone, start, run the acceptance demo and understand the architecture.
@@ -879,7 +867,7 @@ Expected solo effort is **14–18 weeks full-time** or **5–7 months part-time*
 
 ## 13.2 Integration
 
-Use Testcontainers for PostgreSQL/TimescaleDB, Kafka, Redis and Mosquitto where the boundary matters. Do not mock persistence or Kafka behavior in tests claiming integration coverage.
+Use Testcontainers for PostgreSQL/TimescaleDB, Kafka and Mosquitto where the boundary matters. Do not mock persistence or Kafka behavior in tests claiming integration coverage.
 
 ## 13.3 Contract
 
@@ -1012,13 +1000,13 @@ The following do **not** block V1 completion: 27 separate services, real DER har
 6. Why V1 uses weighted greedy optimization before LP/MILP.
 7. Why transactional outbox uses polling before CDC/Debezium.
 8. Why settlement uses an immutable ledger.
-9. Why Docker Compose is the acceptance environment and Kubernetes is a deployment profile.
+9. Why Docker Compose is the V1 acceptance and release environment.
 
 ---
 
-# 18. Immediate next actions
+# 18. Implementation outcome
 
-1. Approve `VoltWeave` as the working name and this V1 boundary.
-2. Preserve `VoltWeave_FULL_Production_SRS.md` as the long-term target-system reference.
-3. Treat this document as the executable V1 baseline.
-4. Start M0, then implement the plain-Java domain kernel before scaffolding services.
+The V1 baseline is implemented and reproducible through the repository release,
+demo and verification scripts. `VOLTWEAVE_TARGET_SRS.md` remains the long-term
+target-system reference; production hardware, market integrations and orchestrated
+cloud deployment require separate delivery plans.
