@@ -41,6 +41,19 @@ jobs:
       - run: npm run lint
       - run: npm run build
 
+  containers:
+    name: Application images
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build release images
+        run: >-
+          docker compose
+          --env-file infrastructure/compose/.env.example
+          -f infrastructure/compose/compose.yml
+          --profile app build
+
   production-guards:
     name: Production guards
     runs-on: ubuntu-latest
