@@ -1,5 +1,32 @@
 name: voltweave
 
+x-backend-service: &backend-service
+  profiles: ["app"]
+  restart: unless-stopped
+  environment: &backend-environment
+    PORT: 8080
+    KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    OIDC_ISSUER_URI: http://localhost:${KEYCLOAK_HOST_PORT:-8180}/realms/voltweave
+    SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/voltweave/protocol/openid-connect/certs
+    OIDC_TOKEN_URI: http://keycloak:8080/realms/voltweave/protocol/openid-connect/token
+    PORTFOLIO_SERVICE_URL: http://portfolio-service:8080
+    TELEMETRY_SERVICE_URL: http://telemetry-service:8080
+    INTELLIGENCE_SERVICE_URL: http://intelligence-service:8080
+    DISPATCH_SERVICE_URL: http://dispatch-service:8080
+    SETTLEMENT_SERVICE_URL: http://settlement-service:8080
+    CONSOLE_LOG_FORMAT: ecs
+    JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+    SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 5
+    SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 1
+  healthcheck:
+    test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+    interval: 10s
+    timeout: 5s
+    retries: 20
+    start_period: 30s
+  mem_limit: 640m
+  stop_grace_period: 30s
+
 services:
   postgres:
     image: timescale/timescaledb:2.29.0-pg18
@@ -149,6 +176,157 @@ services:
       mosquitto:
         condition: service_healthy
     restart: "no"
+
+  portfolio-service:
+    <<: *backend-service
+    image: voltweave/portfolio-service:${VOLTWEAVE_VERSION:-local}
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/backend.Dockerfile
+      target: portfolio-service
+    environment:
+      <<: *backend-environment
+      PORTFOLIO_DB_URL: jdbc:postgresql://postgres:5432/portfolio_db
+      PORTFOLIO_DB_PASSWORD: ${PORTFOLIO_DB_PASSWORD:?PORTFOLIO_DB_PASSWORD is required}
+      MQTT_BROKER_URI: tcp://mosquitto:1883
+      MQTT_ADMIN_USERNAME: ${MOSQUITTO_ADMIN_USERNAME:?MOSQUITTO_ADMIN_USERNAME is required}
+      MQTT_ADMIN_PASSWORD: ${MOSQUITTO_ADMIN_PASSWORD:?MOSQUITTO_ADMIN_PASSWORD is required}
+    ports:
+      - "127.0.0.1:${PORTFOLIO_HOST_PORT:-8081}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      mosquitto-init:
+        condition: service_completed_successfully
+
+  telemetry-service:
+    <<: *backend-service
+    image: voltweave/telemetry-service:${VOLTWEAVE_VERSION:-local}
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/backend.Dockerfile
+      target: telemetry-service
+    environment:
+      <<: *backend-environment
+      TELEMETRY_DB_URL: jdbc:postgresql://postgres:5432/telemetry_db
+      TELEMETRY_DB_PASSWORD: ${TELEMETRY_DB_PASSWORD:?TELEMETRY_DB_PASSWORD is required}
+      KEYCLOAK_INTERNAL_CLIENT_SECRET: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:?KEYCLOAK_INTERNAL_CLIENT_SECRET is required}
+      MQTT_BROKER_URI: tcp://mosquitto:1883
+      MQTT_TELEMETRY_USERNAME: ${MQTT_TELEMETRY_USERNAME:?MQTT_TELEMETRY_USERNAME is required}
+      MQTT_TELEMETRY_PASSWORD: ${MQTT_TELEMETRY_PASSWORD:?MQTT_TELEMETRY_PASSWORD is required}
+    ports:
+      - "127.0.0.1:${TELEMETRY_HOST_PORT:-8082}:8080"
+    depends_on:
+      portfolio-service:
+        condition: service_healthy
+
+  intelligence-service:
+    <<: *backend-service
+    image: voltweave/intelligence-service:${VOLTWEAVE_VERSION:-local}
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/backend.Dockerfile
+      target: intelligence-service
+    environment:
+      <<: *backend-environment
+      INTELLIGENCE_DB_URL: jdbc:postgresql://postgres:5432/intelligence_db
+      INTELLIGENCE_DB_PASSWORD: ${INTELLIGENCE_DB_PASSWORD:?INTELLIGENCE_DB_PASSWORD is required}
+      KEYCLOAK_INTERNAL_CLIENT_SECRET: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:?KEYCLOAK_INTERNAL_CLIENT_SECRET is required}
+    ports:
+      - "127.0.0.1:${INTELLIGENCE_HOST_PORT:-8083}:8080"
+    depends_on:
+      portfolio-service:
+        condition: service_healthy
+
+  dispatch-service:
+    <<: *backend-service
+    image: voltweave/dispatch-service:${VOLTWEAVE_VERSION:-local}
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/backend.Dockerfile
+      target: dispatch-service
+    environment:
+      <<: *backend-environment
+      DISPATCH_DB_URL: jdbc:postgresql://postgres:5432/dispatch_db
+      DISPATCH_DB_PASSWORD: ${DISPATCH_DB_PASSWORD:?DISPATCH_DB_PASSWORD is required}
+      KEYCLOAK_INTERNAL_CLIENT_SECRET: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:?KEYCLOAK_INTERNAL_CLIENT_SECRET is required}
+    ports:
+      - "127.0.0.1:${DISPATCH_HOST_PORT:-8084}:8080"
+    depends_on:
+      portfolio-service:
+        condition: service_healthy
+      intelligence-service:
+        condition: service_healthy
+
+  settlement-service:
+    <<: *backend-service
+    image: voltweave/settlement-service:${VOLTWEAVE_VERSION:-local}
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/backend.Dockerfile
+      target: settlement-service
+    environment:
+      <<: *backend-environment
+      SETTLEMENT_DB_URL: jdbc:postgresql://postgres:5432/settlement_db
+      SETTLEMENT_DB_PASSWORD: ${SETTLEMENT_DB_PASSWORD:?SETTLEMENT_DB_PASSWORD is required}
+      KEYCLOAK_INTERNAL_CLIENT_SECRET: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:?KEYCLOAK_INTERNAL_CLIENT_SECRET is required}
+    ports:
+      - "127.0.0.1:${SETTLEMENT_HOST_PORT:-8085}:8080"
+    depends_on:
+      portfolio-service:
+        condition: service_healthy
+      dispatch-service:
+        condition: service_healthy
+
+  api-gateway:
+    <<: *backend-service
+    image: voltweave/api-gateway:${VOLTWEAVE_VERSION:-local}
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/backend.Dockerfile
+      target: api-gateway
+    ports:
+      - "127.0.0.1:${GATEWAY_HOST_PORT:-8080}:8080"
+    mem_limit: 512m
+    depends_on:
+      portfolio-service:
+        condition: service_healthy
+      telemetry-service:
+        condition: service_healthy
+      intelligence-service:
+        condition: service_healthy
+      dispatch-service:
+        condition: service_healthy
+      settlement-service:
+        condition: service_healthy
+
+  web:
+    profiles: ["app"]
+    image: voltweave/web:${VOLTWEAVE_VERSION:-local}
+    build:
+      context: ../../apps/web
+      args:
+        NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:${KEYCLOAK_HOST_PORT:-8180}
+    environment:
+      API_GATEWAY_URL: http://api-gateway:8080
+    ports:
+      - "127.0.0.1:${WEB_HOST_PORT:-3000}:3000"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    mem_limit: 256m
+    stop_grace_period: 20s
 
   prometheus:
     profiles: ["observability"]
