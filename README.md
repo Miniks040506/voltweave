@@ -1,19 +1,23 @@
-# VoltWeave
+<div align="center">
+  <h1>VoltWeave</h1>
+  <p><strong>Virtual power plant orchestration, from live telemetry to settlement.</strong></p>
+  <p>
+    <a href="https://github.com/Miniks040506/voltweave/actions/workflows/ci.yml"><img src="https://github.com/Miniks040506/voltweave/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+    <img src="https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white" alt="Java 21">
+    <img src="https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot 4.1">
+    <img src="https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16">
+  </p>
+</div>
 
-[![CI](https://github.com/Miniks040506/voltweave/actions/workflows/ci.yml/badge.svg)](https://github.com/Miniks040506/voltweave/actions/workflows/ci.yml)
-[![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/21/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+VoltWeave coordinates simulated batteries and distributed energy resources as a
+single virtual power plant. It covers the complete operational loop: collect live
+telemetry, calculate flexibility, plan and execute dispatches, measure delivery,
+then settle customer rewards.
 
-VoltWeave is an event-driven virtual power plant platform that coordinates
-simulated batteries and other distributed energy resources. It ingests device
-telemetry, calculates available flexibility, prepares dispatch plans, executes
-device commands, measures delivery and settles customer rewards.
+The V1 release runs locally without physical hardware, an electricity-market
+account or a payment provider.
 
-The repository contains a complete local V1 environment. No physical device,
-external electricity market or payment provider is required.
-
-## What the platform does
+## Product overview
 
 - Manages organizations, memberships, sites, devices and virtual power plants.
 - Provisions revocable, device-scoped MQTT credentials.
@@ -26,84 +30,15 @@ external electricity market or payment provider is required.
 - Creates immutable settlements and append-only reward ledger entries.
 - Exposes customer, operator and administrator web journeys.
 
-## Architecture
+### Operational flow
 
-```mermaid
-flowchart LR
-    SIM[Device simulator] -->|MQTT| MQ[MQTT broker]
-    MQ --> TEL[Telemetry]
-    TEL -->|events| K[Kafka]
-
-    WEB[Next.js web] --> GW[API Gateway]
-    GW --> PORT[Portfolio]
-    GW --> INT[Intelligence]
-    GW --> DIS[Dispatch]
-    GW --> SET[Settlement]
-    GW --> TEL
-
-    PORT -->|access checks| INT
-    PORT -->|access checks| DIS
-    PORT -->|access checks| SET
-    PORT -->|access checks| TEL
-
-    K --> INT
-    K --> DIS
-    K --> SET
-    DIS -->|commands| K
-    K --> TEL
-    TEL -->|MQTT command| MQ
-    MQ --> SIM
-
-    PORT --- PG[(PostgreSQL)]
-    INT --- PG
-    DIS --- PG
-    SET --- PG
-    TEL --- TS[(TimescaleDB)]
-    KC[Keycloak] --> GW
-```
-
-Immediate queries use authenticated HTTP. Domain lifecycle transitions use Kafka.
-Device telemetry and commands use MQTT. Each backend service owns its database and
-Flyway migrations; services never join or write another service's tables.
-
-### Services
-
-| Component | Responsibility |
-|---|---|
-| Web | Customer, operator and administrator interfaces |
-| API Gateway | Public routing, JWT validation and correlation IDs |
-| Portfolio | Tenants, sites, devices, VPP membership and authorization checks |
-| Telemetry | MQTT ingress, validation, TimescaleDB history and durable twins |
-| Intelligence | Forecast baselines, flexibility and deterministic optimization |
-| Dispatch | Dispatch state, allocations, commands, retries and recovery |
-| Settlement | Immutable delivery settlement, rewards, ledger and CSV export |
-| Simulator | Deterministic meter, solar, battery and EV behavior |
-
-### Reliability and security boundaries
-
-- Transactional outbox publishing prevents lost events after database commits.
-- Consumer inboxes and business keys make Kafka replay idempotent.
-- API idempotency keys protect provisioning and dispatch commands.
-- Immutable baseline snapshots preserve settlement inputs.
-- Optimistic versioning and device reservations prevent conflicting dispatches.
-- Keycloak provides OIDC identities and role claims.
-- Resource authorization is resolved by Portfolio; clients cannot choose a tenant
-  through a trusted header.
-- MQTT ACLs restrict each device to its own telemetry, status, acknowledgement and
-  command topics.
-
-## Technology
-
-| Area | Stack |
-|---|---|
-| Backend | Java 21, Spring Boot 4.1, Spring Cloud Gateway, Spring Security |
-| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS |
-| Data | PostgreSQL, TimescaleDB, Flyway |
-| Messaging | Apache Kafka, Eclipse Mosquitto MQTT |
-| Identity | Keycloak |
-| Observability | Micrometer, Prometheus, Grafana, ECS structured logging |
-| Testing | JUnit 5, Testcontainers, Maven Failsafe, k6 |
-| Delivery | Docker Compose, GitHub Actions |
+1. A customer registers a site and provisions an energy device.
+2. The simulator publishes authenticated telemetry through MQTT.
+3. VoltWeave builds a durable device twin and calculates available flexibility.
+4. An operator reviews an allocation and confirms a dispatch.
+5. The platform sends commands, measures actual delivery and recovers from
+   under-performance.
+6. A completed dispatch produces an immutable settlement and customer reward.
 
 ## Quick start
 
@@ -192,6 +127,36 @@ telemetry, optimization, dispatch, settlement and audit behavior.
 | Grafana | `http://localhost:3001` | Optional acceptance dashboard |
 
 Application clients should use Gateway rather than direct service ports.
+
+## Technical overview
+
+| Component | Responsibility |
+|---|---|
+| Web | Customer, operator and administrator interfaces |
+| API Gateway | Public routing, JWT validation and correlation IDs |
+| Portfolio | Tenants, sites, devices, VPP membership and authorization checks |
+| Telemetry | MQTT ingress, validation, TimescaleDB history and durable twins |
+| Intelligence | Forecast baselines, flexibility and deterministic optimization |
+| Dispatch | Dispatch state, allocations, commands, retries and recovery |
+| Settlement | Immutable delivery settlement, rewards, ledger and CSV export |
+| Simulator | Deterministic meter, solar, battery and EV behavior |
+
+| Area | Stack |
+|---|---|
+| Backend | Java 21, Spring Boot 4.1, Spring Cloud Gateway, Spring Security |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS |
+| Data | PostgreSQL, TimescaleDB, Flyway |
+| Messaging | Apache Kafka, Eclipse Mosquitto MQTT |
+| Identity | Keycloak |
+| Observability | Micrometer, Prometheus, Grafana, ECS structured logging |
+| Testing | JUnit 5, Testcontainers, Maven Failsafe, k6 |
+| Delivery | Docker Compose, GitHub Actions |
+
+The platform uses authenticated HTTP for immediate queries, Kafka for durable
+domain events and MQTT for device communication. Each backend service owns its
+database and migrations. Transactional outboxes, consumer inboxes, idempotency
+keys, immutable settlement inputs and scoped authorization protect the main
+distributed workflows.
 
 ## Testing
 
