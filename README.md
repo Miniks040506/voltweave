@@ -17,6 +17,8 @@ then settle customer rewards.
 The V1 release runs locally without physical hardware, an electricity-market
 account or a payment provider.
 
+![VoltWeave product landing page](docs/assets/voltweave-product.png)
+
 ## Product overview
 
 - Manages organizations, memberships, sites, devices and virtual power plants.
