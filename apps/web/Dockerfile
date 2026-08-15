@@ -23,7 +23,6 @@ ENV PORT=3000
 WORKDIR /app
 
 RUN addgroup -S nodejs && adduser -S -u 10001 -G nodejs nextjs
-COPY --from=build --chown=nextjs:nodejs /app/public ./public
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 
