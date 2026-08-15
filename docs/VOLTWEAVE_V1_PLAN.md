@@ -1,10 +1,9 @@
 # VoltWeave V1
 ## Autonomous Distributed Energy Orchestration Platform
 
-**Former working name:** GridMind  
 **Document:** V1 Product, System Design, Architecture and Delivery Plan  
-**Status:** Proposed baseline  
-**Date:** 2026-08-11  
+**Status:** Implemented
+**Date:** 2026-08-15
 
 > Weave distributed energy resources into one adaptive virtual power plant.
 
@@ -18,13 +17,11 @@ The V1 product name is **VoltWeave**.
 
 - **Volt** represents electrical energy.
 - **Weave** represents coordinating many independent devices as one resource.
-- The name describes aggregation and orchestration without claiming that the product uses AI.
+- The name describes aggregation and orchestration of distributed energy resources.
 
 Recommended repository description:
 
 > VoltWeave is an event-driven virtual power plant platform that observes, forecasts, optimizes and automatically dispatches simulated distributed energy resources while enforcing customer and device constraints.
-
-This is a working portfolio/open-source name, not a trademark clearance.
 
 ## 1.2 Product promise
 
@@ -141,7 +138,6 @@ Safety constraints always override optimization and automation.
 - Physical vendor integrations beyond the MQTT adapter contract.
 - Real market bidding or utility settlement.
 - Real money transfer.
-- AI/LLM copilot.
 - XGBoost, LSTM, genetic algorithms and reinforcement learning.
 - LP/MILP until weighted allocation is measured and shown insufficient.
 - Multi-region active-active deployment.
@@ -1002,7 +998,7 @@ VoltWeave V1 is complete only when:
 - Performance results include hardware, dataset, duration and commands.
 - README, diagrams, ADRs, runbooks and demo video are present.
 
-The following do **not** block V1 completion: 27 separate services, real DER hardware, real market participation, LP/MILP, AI features, multi-region HA, Helm, Terraform, PDF or XLSX reports.
+The following do **not** block V1 completion: 27 separate services, real DER hardware, real market participation, LP/MILP, multi-region HA, Helm, Terraform, PDF or XLSX reports.
 
 ---
 
@@ -1023,6 +1019,6 @@ The following do **not** block V1 completion: 27 separate services, real DER har
 # 18. Immediate next actions
 
 1. Approve `VoltWeave` as the working name and this V1 boundary.
-2. Preserve `GridMind_FULL_Production_SRS.md` as the long-term target-system reference.
+2. Preserve `VoltWeave_FULL_Production_SRS.md` as the long-term target-system reference.
 3. Treat this document as the executable V1 baseline.
 4. Start M0, then implement the plain-Java domain kernel before scaffolding services.

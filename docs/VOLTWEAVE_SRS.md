@@ -1,4 +1,4 @@
-# GridMind
+# VoltWeave
 ## Software Requirements Specification (SRS)
 ### Virtual Power Plant & Smart Energy Management Platform
 
@@ -13,7 +13,7 @@
 
 ## 1.1 Purpose
 
-GridMind is a **Virtual Power Plant (VPP) and Smart Energy Management Platform** designed to aggregate distributed energy resources (DERs) such as:
+VoltWeave is a **Virtual Power Plant (VPP) and Smart Energy Management Platform** designed to aggregate distributed energy resources (DERs) such as:
 
 - Rooftop solar panels
 - Residential and commercial batteries
@@ -24,7 +24,7 @@ GridMind is a **Virtual Power Plant (VPP) and Smart Energy Management Platform**
 
 The platform collects real-time telemetry, forecasts energy production and consumption, determines available flexibility, schedules distributed resources, executes dispatch commands, measures delivered energy, calculates incentives, and provides operators and customers with real-time dashboards.
 
-From a software engineering perspective, GridMind is designed as a **microservice-based, event-driven distributed system** demonstrating:
+From a software engineering perspective, VoltWeave is designed as a **microservice-based, event-driven distributed system** demonstrating:
 
 - Spring Boot microservices
 - Apache Kafka
@@ -42,13 +42,12 @@ From a software engineering perspective, GridMind is designed as a **microservic
 - Observability
 - Docker/Kubernetes
 - Forecasting and optimization
-- AI-assisted operations as an optional advanced feature
 
 ---
 
 # 2. Product Vision
 
-GridMind converts thousands of independent small energy devices into one coordinated virtual energy resource.
+VoltWeave converts thousands of independent small energy devices into one coordinated virtual energy resource.
 
 Instead of treating 1,000 batteries as isolated devices:
 
@@ -60,10 +59,10 @@ Battery C
 Battery N
 ```
 
-GridMind treats them as a shared flexible resource:
+VoltWeave treats them as a shared flexible resource:
 
 ```text
-               GridMind VPP
+               VoltWeave VPP
                     |
        +------------+------------+
        |            |            |
@@ -118,7 +117,7 @@ The project must demonstrate architecture and engineering concerns beyond CRUD a
 
 ## 4.1 In Scope — Version 1
 
-GridMind V1 supports:
+VoltWeave V1 supports:
 
 1. User registration and authentication.
 2. Household/site registration.
@@ -179,7 +178,7 @@ Future versions may integrate real:
 | Device/IoT Gateway | Sends telemetry and receives commands |
 | Market Data Provider | Provides electricity price or grid signal data |
 | Grid Operator | Future external participant requesting flexibility |
-| Developer/DevOps | Operates and maintains the GridMind platform |
+| Developer/DevOps | Operates and maintains the VoltWeave platform |
 
 ---
 
@@ -241,11 +240,11 @@ flowchart LR
     Admin[Administrator]
     Analyst[Energy Analyst]
 
-    Web[GridMind Web App]
+    Web[VoltWeave Web App]
 
     Gateway[API Gateway]
 
-    Services[GridMind Microservices]
+    Services[VoltWeave Microservices]
 
     Device[IoT / Device Simulator]
     Market[Energy Market API]
@@ -367,7 +366,7 @@ flowchart TB
 For portfolio V1:
 
 - Keycloak for identity provider
-- GridMind Identity Service stores GridMind-specific user profile data
+- VoltWeave Identity Service stores VoltWeave-specific user profile data
 
 ### Main Entities
 
@@ -802,7 +801,7 @@ Departure: 07:00
 Current time: 01:00
 ```
 
-GridMind may delay charging if sufficient future charging time remains.
+VoltWeave may delay charging if sufficient future charging time remains.
 
 ## 18.4 Site Flexibility Output
 
@@ -821,7 +820,7 @@ GridMind may delay charging if sufficient future charging time remains.
 
 # 19. Dispatch Service
 
-This is the central business service of GridMind.
+This is the central business service of VoltWeave.
 
 ## 19.1 Dispatch Definition
 
@@ -837,7 +836,7 @@ Duration: 30 minutes
 Start: 18:00
 ```
 
-GridMind identifies devices capable of contributing.
+VoltWeave identifies devices capable of contributing.
 
 ---
 
@@ -1031,7 +1030,7 @@ Important principle:
 Requested capacity != Delivered capacity
 ```
 
-GridMind must continuously measure actual telemetry.
+VoltWeave must continuously measure actual telemetry.
 
 If a device underperforms:
 
@@ -1174,7 +1173,7 @@ Display:
 Example:
 
 ```text
-GRIDMIND HOME
+VOLTWEAVE HOME
 
 Current Power Flow
 
@@ -1484,7 +1483,7 @@ Every service must expose health and metrics endpoints.
 
 # 35. Distributed System Patterns
 
-GridMind should intentionally demonstrate the following patterns.
+VoltWeave should intentionally demonstrate the following patterns.
 
 ## 35.1 Database per Service
 
@@ -1968,7 +1967,7 @@ flowchart LR
     MQTT[(Mosquitto MQTT)]
     Ingestion[Telemetry Gateway]
     Kafka[(Kafka)]
-    GM[GridMind]
+    GM[VoltWeave]
 
     GM -->|commands| MQTT
     MQTT --> Sim
@@ -2041,7 +2040,7 @@ Reduce demand by 500 kW
 for 30 minutes.
 ```
 
-## Step 5 — GridMind Allocation
+## Step 5 — VoltWeave Allocation
 
 System selects:
 
@@ -2096,7 +2095,7 @@ Performance:
 
 Show earnings for participating households.
 
-This scenario is the core "wow demo" for CV interviews.
+This scenario is the reference end-to-end acceptance flow.
 
 ---
 
@@ -2244,10 +2243,10 @@ Loki
 
 # 55. Repository Structure
 
-Recommended monorepo for a student portfolio:
+Recommended monorepo layout:
 
 ```text
-gridmind/
+voltweave/
 |
 +-- services/
 |   +-- api-gateway/
@@ -2267,7 +2266,7 @@ gridmind/
 |   +-- device-simulator/
 |
 +-- frontend/
-|   +-- gridmind-web/
+|   +-- voltweave-web/
 |
 +-- infrastructure/
 |   +-- docker/
@@ -2296,7 +2295,7 @@ gridmind/
 
 The logical architecture may contain 10+ services, but implementation should be incremental.
 
-For a fresher portfolio, too many empty microservices are worse than fewer well-engineered services.
+A smaller set of complete service boundaries is preferable to many empty microservices.
 
 ---
 
@@ -2568,9 +2567,9 @@ Test:
 
 ---
 
-# 60. Key Interview Topics Demonstrated
+# 60. Engineering Concerns
 
-GridMind can be used to discuss:
+The architecture addresses the following concerns:
 
 ## Microservices
 
@@ -2637,7 +2636,7 @@ GridMind can be used to discuss:
 - forecasting
 - resource allocation
 
-This is why GridMind is significantly stronger as a portfolio project than a typical CRUD microservice project.
+Together, these concerns distinguish the platform from a collection of independent CRUD services.
 
 ---
 
@@ -2806,7 +2805,7 @@ metadata
 
 # 68. Privacy Requirements
 
-GridMind contains potentially sensitive household behavior data.
+VoltWeave contains potentially sensitive household behavior data.
 
 Principles:
 
@@ -2980,45 +2979,9 @@ Do not apply identical retry behavior to every workflow.
 
 ---
 
-# 74. Optional AI Features
+# 74. Optional Advanced Features
 
-AI is not required for GridMind MVP.
-
-If added, it should solve meaningful tasks.
-
-Examples:
-
-## AI Energy Copilot
-
-```text
-User:
-Why did my electricity bill increase yesterday?
-
-Copilot:
-Your evening consumption increased by 28%.
-EV charging accounted for 6.4 kWh between 18:20 and 21:10.
-Your solar production was also 17% below your 30-day average.
-```
-
-## Operator Copilot
-
-```text
-Operator:
-Why did Dispatch #184 underperform?
-
-Copilot:
-12 batteries became unavailable during the dispatch.
-Fleet delivery dropped by 74 kW at 18:14.
-Automatic reallocation recovered 61 kW within 19 seconds.
-```
-
-AI should query structured platform data through controlled tools rather than inventing answers.
-
----
-
-# 75. Optional Advanced Features
-
-Future GridMind versions may include:
+Future VoltWeave versions may include:
 
 - Carbon-aware scheduling
 - Dynamic tariffs
@@ -3038,7 +3001,7 @@ Future GridMind versions may include:
 
 ---
 
-# 76. Architecture Decision Records
+# 75. Architecture Decision Records
 
 The project should include ADRs such as:
 
@@ -3055,13 +3018,13 @@ ADR-009 Monorepo vs polyrepo
 ADR-010 Keycloak vs custom authentication
 ```
 
-These make the repository significantly stronger during interviews.
+These records preserve the reasoning behind material architecture decisions.
 
 ---
 
-# 77. Definition of Done for MVP
+# 76. Definition of Done for MVP
 
-GridMind MVP is considered complete when the following scenario works end-to-end:
+VoltWeave MVP is considered complete when the following scenario works end-to-end:
 
 ```text
 1. Customer logs in.
@@ -3101,39 +3064,7 @@ GridMind MVP is considered complete when the following scenario works end-to-end
 18. Grafana shows trace/metrics for the workflow.
 ```
 
-If this scenario is polished and reliable, the project is already strong enough to showcase in a fresher backend CV.
-
----
-
-# 78. CV-Oriented Engineering Goals
-
-The project should allow the developer to truthfully write accomplishments such as:
-
-```text
-Designed and implemented an event-driven Virtual Power Plant platform using
-Spring Boot microservices, Kafka, PostgreSQL, Redis and TimescaleDB.
-
-Built a real-time telemetry pipeline supporting thousands of simulated
-distributed energy devices with Kafka-based horizontal consumer scaling.
-
-Designed an automated dispatch engine that aggregates battery, EV and flexible
-load capacity while enforcing device and customer constraints.
-
-Implemented Saga, Transactional Outbox and idempotent event processing to
-handle distributed transactions and at-least-once message delivery.
-
-Built end-to-end observability using OpenTelemetry, Prometheus, Grafana,
-Tempo and Loki.
-
-Containerized the platform and deployed services to Kubernetes with
-health checks, autoscaling and rolling updates.
-```
-
-Only include claims that have actually been implemented and measured.
-
----
-
-# 79. Success Metrics
+# 77. Success Metrics
 
 Technical:
 
@@ -3159,23 +3090,23 @@ Dispatch success percentage
 
 ---
 
-# 80. Final Product Positioning
+# 78. Final Product Positioning
 
 Recommended project title:
 
-> **GridMind — Event-Driven Virtual Power Plant & Distributed Energy Orchestration Platform**
+> **VoltWeave — Event-Driven Virtual Power Plant & Distributed Energy Orchestration Platform**
 
 Short GitHub description:
 
-> GridMind is a Spring Boot microservice platform that aggregates simulated solar, battery, EV and smart-meter resources into a Virtual Power Plant. It provides real-time telemetry, forecasting, flexibility calculation, distributed dispatch orchestration and customer settlement using Kafka, PostgreSQL, TimescaleDB, Redis, MQTT and Kubernetes.
+> VoltWeave is a Spring Boot microservice platform that aggregates simulated solar, battery, EV and smart-meter resources into a Virtual Power Plant. It provides real-time telemetry, forecasting, flexibility calculation, distributed dispatch orchestration and customer settlement using Kafka, PostgreSQL, TimescaleDB, Redis, MQTT and Kubernetes.
 
-One-sentence interview explanation:
+System summary:
 
-> GridMind simulates how thousands of household energy devices can be coordinated as one virtual power plant while solving real distributed-system problems such as streaming telemetry, partial failures, asynchronous command execution, optimization, eventual consistency and financial settlement.
+> VoltWeave simulates how thousands of household energy devices can be coordinated as one virtual power plant while solving real distributed-system problems such as streaming telemetry, partial failures, asynchronous command execution, optimization, eventual consistency and financial settlement.
 
 ---
 
-# 81. Recommended First Implementation Boundary
+# 79. Recommended First Implementation Boundary
 
 Do **not** implement the complete architecture at once.
 
@@ -3227,7 +3158,7 @@ This prevents the common portfolio mistake of creating many tiny services with n
 
 ---
 
-# 82. Recommended Build Priority
+# 80. Recommended Build Priority
 
 If the main goal is **Java Backend CV impact**, prioritize engineering depth in this order:
 
@@ -3243,16 +3174,15 @@ If the main goal is **Java Backend CV impact**, prioritize engineering depth in 
 9. Load testing
 10. Kubernetes
 11. Forecasting
-12. AI features
 ```
 
-The first ten items are more valuable to the core GridMind architecture than adding an LLM chatbot early.
+Implementation should prioritize correctness and operability in this order.
 
 ---
 
-# 83. Conclusion
+# 81. Conclusion
 
-GridMind should be built as a realistic distributed energy orchestration platform rather than a generic CRUD application with many Spring Boot services.
+VoltWeave should be built as a realistic distributed energy orchestration platform rather than a generic CRUD application with many Spring Boot services.
 
 The key technical story is:
 
@@ -3295,4 +3225,4 @@ That end-to-end flow gives the project strong technical depth across:
 - Algorithms
 - Observability
 
-and creates a project that is both distinctive for a fresher portfolio and capable of being expanded into a more serious open-source or SaaS platform.
+The same foundation can be expanded into a broader open-source or SaaS platform.

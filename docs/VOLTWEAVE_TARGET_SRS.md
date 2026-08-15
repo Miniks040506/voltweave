@@ -1,4 +1,4 @@
-# GridMind
+# VoltWeave
 ## Full Production Software Requirements Specification (SRS)
 ### Virtual Power Plant & Distributed Energy Resource Orchestration Platform
 
@@ -16,7 +16,7 @@
 
 ## 1.1 Purpose
 
-GridMind is a **Virtual Power Plant (VPP) and Smart Energy Management Platform** designed to aggregate distributed energy resources (DERs) such as:
+VoltWeave is a **Virtual Power Plant (VPP) and Smart Energy Management Platform** designed to aggregate distributed energy resources (DERs) such as:
 
 - Rooftop solar panels
 - Residential and commercial batteries
@@ -27,7 +27,7 @@ GridMind is a **Virtual Power Plant (VPP) and Smart Energy Management Platform**
 
 The platform collects real-time telemetry, forecasts energy production and consumption, determines available flexibility, schedules distributed resources, executes dispatch commands, measures delivered energy, calculates incentives, and provides operators and customers with real-time dashboards.
 
-From a software engineering perspective, GridMind is designed as a **microservice-based, event-driven distributed system** demonstrating:
+From a software engineering perspective, VoltWeave is designed as a **microservice-based, event-driven distributed system** demonstrating:
 
 - Spring Boot microservices
 - Apache Kafka
@@ -45,14 +45,13 @@ From a software engineering perspective, GridMind is designed as a **microservic
 - Observability
 - Docker/Kubernetes
 - Forecasting and optimization
-- AI-assisted operations as an optional advanced feature
 
 ---
 
 
 # 2. Product Vision
 
-GridMind converts thousands of independent small energy devices into one coordinated virtual energy resource.
+VoltWeave converts thousands of independent small energy devices into one coordinated virtual energy resource.
 
 Instead of treating 1,000 batteries as isolated devices:
 
@@ -64,10 +63,10 @@ Battery C
 Battery N
 ```
 
-GridMind treats them as a shared flexible resource:
+VoltWeave treats them as a shared flexible resource:
 
 ```text
-               GridMind VPP
+               VoltWeave VPP
                     |
        +------------+------------+
        |            |            |
@@ -124,7 +123,7 @@ The system must implement architecture and engineering concerns beyond CRUD appl
 
 ## 4.1 Complete Product Scope
 
-The complete GridMind target product shall implement:
+The complete VoltWeave target product shall implement:
 
 1. OAuth2/OIDC authentication and application user profiles.
 2. Multi-tenant organizations and organization memberships.
@@ -185,9 +184,9 @@ The complete GridMind target product shall implement:
 
 ## 4.2 Product Boundaries and External Responsibilities
 
-GridMind shall support both real integration adapters and simulation adapters. The software controls devices only through authorized device/vendor protocols; device firmware and physical electrical safety remain external responsibilities.
+VoltWeave shall support both real integration adapters and simulation adapters. The software controls devices only through authorized device/vendor protocols; device firmware and physical electrical safety remain external responsibilities.
 
-GridMind does not own:
+VoltWeave does not own:
 
 - Physical battery, EV charger, smart meter or inverter firmware.
 - Utility transmission/distribution infrastructure.
@@ -211,7 +210,7 @@ The `simulation-service` is mandatory for automated testing and deterministic ac
 | Device/IoT Gateway | Sends telemetry and receives commands |
 | Market Data Provider | Provides electricity price or grid signal data |
 | Grid Operator | Future external participant requesting flexibility |
-| Developer/DevOps | Operates and maintains the GridMind platform |
+| Developer/DevOps | Operates and maintains the VoltWeave platform |
 
 ---
 
@@ -275,11 +274,11 @@ flowchart LR
     Admin[Administrator]
     Analyst[Energy Analyst]
 
-    Web[GridMind Web App]
+    Web[VoltWeave Web App]
 
     Gateway[API Gateway]
 
-    Services[GridMind Microservices]
+    Services[VoltWeave Microservices]
 
     Device[IoT / Device Simulator]
     Market[Energy Market API]
@@ -401,7 +400,7 @@ flowchart TB
 ### Required Identity Architecture
 
 - Keycloak or an equivalent OIDC provider handles authentication.
-- GridMind Identity/Profile Service stores GridMind-specific user profile data.
+- VoltWeave Identity/Profile Service stores VoltWeave-specific user profile data.
 - Domain microservices do not store raw user passwords.
 
 ### Main Entities
@@ -846,7 +845,7 @@ Departure: 07:00
 Current time: 01:00
 ```
 
-GridMind may delay charging if sufficient future charging time remains.
+VoltWeave may delay charging if sufficient future charging time remains.
 
 ## 18.4 Site Flexibility Output
 
@@ -866,7 +865,7 @@ GridMind may delay charging if sufficient future charging time remains.
 
 # 19. Dispatch Service
 
-This is the central business service of GridMind.
+This is the central business service of VoltWeave.
 
 ## 19.1 Dispatch Definition
 
@@ -882,7 +881,7 @@ Duration: 30 minutes
 Start: 18:00
 ```
 
-GridMind identifies devices capable of contributing.
+VoltWeave identifies devices capable of contributing.
 
 ---
 
@@ -1084,7 +1083,7 @@ Important principle:
 Requested capacity != Delivered capacity
 ```
 
-GridMind must continuously measure actual telemetry.
+VoltWeave must continuously measure actual telemetry.
 
 If a device underperforms:
 
@@ -1232,7 +1231,7 @@ Display:
 Example:
 
 ```text
-GRIDMIND HOME
+VOLTWEAVE HOME
 
 Current Power Flow
 
@@ -1547,7 +1546,7 @@ Every service must expose health and metrics endpoints.
 
 # 35. Distributed System Patterns
 
-GridMind should intentionally demonstrate the following patterns.
+VoltWeave should intentionally demonstrate the following patterns.
 
 ## 35.1 Database per Service
 
@@ -2045,7 +2044,7 @@ flowchart LR
     MQTT[(Mosquitto MQTT)]
     Ingestion[Telemetry Gateway]
     Kafka[(Kafka)]
-    GM[GridMind]
+    GM[VoltWeave]
 
     GM -->|commands| MQTT
     MQTT --> Sim
@@ -2119,7 +2118,7 @@ Reduce demand by 500 kW
 for 30 minutes.
 ```
 
-## Step 5 — GridMind Allocation
+## Step 5 — VoltWeave Allocation
 
 System selects:
 
@@ -2329,7 +2328,7 @@ Loki
 Recommended monorepo for repository organization:
 
 ```text
-gridmind/
+voltweave/
 |
 +-- services/
 |   +-- api-gateway/
@@ -2349,7 +2348,7 @@ gridmind/
 |   +-- device-simulator/
 |
 +-- frontend/
-|   +-- gridmind-web/
+|   +-- voltweave-web/
 |
 +-- infrastructure/
 |   +-- docker/
@@ -2450,7 +2449,7 @@ Test:
 
 # 57. Required Engineering Topics and Documentation
 
-GridMind must implement and document:
+VoltWeave must implement and document:
 
 ## Microservices
 
@@ -2694,7 +2693,7 @@ metadata
 
 # 65. Privacy Requirements
 
-GridMind contains potentially sensitive household behavior data.
+VoltWeave contains potentially sensitive household behavior data.
 
 Principles:
 
@@ -2891,7 +2890,7 @@ ADR-009 Monorepo vs polyrepo
 ADR-010 Keycloak vs custom authentication
 ```
 
-These make the repository significantly stronger during interviews.
+These records preserve the reasoning behind material architecture decisions.
 
 ---
 
@@ -2927,15 +2926,15 @@ Dispatch success percentage
 
 Recommended project title:
 
-> **GridMind — Event-Driven Virtual Power Plant & Distributed Energy Orchestration Platform**
+> **VoltWeave — Event-Driven Virtual Power Plant & Distributed Energy Orchestration Platform**
 
 Short GitHub description:
 
-> GridMind is a Spring Boot microservice platform that aggregates simulated solar, battery, EV and smart-meter resources into a Virtual Power Plant. It provides real-time telemetry, forecasting, flexibility calculation, distributed dispatch orchestration and customer settlement using Kafka, PostgreSQL, TimescaleDB, Redis, MQTT and Kubernetes.
+> VoltWeave is a Spring Boot microservice platform that aggregates simulated solar, battery, EV and smart-meter resources into a Virtual Power Plant. It provides real-time telemetry, forecasting, flexibility calculation, distributed dispatch orchestration and customer settlement using Kafka, PostgreSQL, TimescaleDB, Redis, MQTT and Kubernetes.
 
-One-sentence interview explanation:
+System summary:
 
-> GridMind simulates how thousands of household energy devices can be coordinated as one virtual power plant while solving real distributed-system problems such as streaming telemetry, partial failures, asynchronous command execution, optimization, eventual consistency and financial settlement.
+> VoltWeave simulates how thousands of household energy devices can be coordinated as one virtual power plant while solving real distributed-system problems such as streaming telemetry, partial failures, asynchronous command execution, optimization, eventual consistency and financial settlement.
 
 ---
 
@@ -2947,7 +2946,7 @@ The final target platform shall contain the following independently deployable b
 | # | Service | Mandatory Responsibility |
 |---:|---|---|
 | 1 | `api-gateway` | Public routing, token validation, rate limiting, correlation/trace propagation |
-| 2 | `identity-profile-service` | GridMind user profile mapped to external IdP identity |
+| 2 | `identity-profile-service` | VoltWeave user profile mapped to external IdP identity |
 | 3 | `organization-service` | Tenants, operator organizations, commercial organizations, membership |
 | 4 | `site-service` | Physical sites, grid limits, customer energy preferences |
 | 5 | `device-registry-service` | Device metadata, capability, provisioning and lifecycle |
@@ -3017,14 +3016,14 @@ OrganizationMember
 
 # 76. Device Gateway Service
 
-The Device Gateway separates unreliable, vendor-specific device communication from GridMind's deterministic domain logic.
+The Device Gateway separates unreliable, vendor-specific device communication from VoltWeave's deterministic domain logic.
 
 ## Responsibilities
 
 - Authenticate device connections.
 - Enforce per-device topic authorization.
 - Maintain device sessions.
-- Translate vendor/protocol-specific payloads into GridMind command/acknowledgement models.
+- Translate vendor/protocol-specific payloads into VoltWeave command/acknowledgement models.
 - Deliver outgoing commands.
 - Receive acknowledgements.
 - Track device connection/disconnection.
@@ -3034,10 +3033,10 @@ The Device Gateway separates unreliable, vendor-specific device communication fr
 ## MQTT Topic Convention
 
 ```text
-gridmind/{tenantId}/{siteId}/{deviceId}/telemetry
-gridmind/{tenantId}/{siteId}/{deviceId}/status
-gridmind/{tenantId}/{siteId}/{deviceId}/ack
-gridmind/{tenantId}/{siteId}/{deviceId}/command
+voltweave/{tenantId}/{siteId}/{deviceId}/telemetry
+voltweave/{tenantId}/{siteId}/{deviceId}/status
+voltweave/{tenantId}/{siteId}/{deviceId}/ack
+voltweave/{tenantId}/{siteId}/{deviceId}/command
 ```
 
 ## Requirements
@@ -3175,7 +3174,7 @@ quality
 
 # 80. Forecast Model Lifecycle
 
-GridMind shall treat forecasting as a model lifecycle rather than a single hard-coded formula.
+VoltWeave shall treat forecasting as a model lifecycle rather than a single hard-coded formula.
 
 ```text
 ForecastModel
@@ -3304,7 +3303,7 @@ OptimizationResult
 
 # 82. Performance Service
 
-The Performance Service continuously evaluates whether a dispatch is delivering what GridMind requested.
+The Performance Service continuously evaluates whether a dispatch is delivering what VoltWeave requested.
 
 ```text
 DispatchPerformancePoint
@@ -3334,7 +3333,7 @@ DispatchPerformancePoint
 
 # 83. Billing and Reward Service
 
-GridMind financial rewards shall use an immutable ledger pattern.
+VoltWeave financial rewards shall use an immutable ledger pattern.
 
 ```text
 RewardLedgerEntry
@@ -3554,7 +3553,7 @@ It shall simulate:
 - Under-delivery.
 - Large fleet generation.
 
-The simulator must use the same MQTT/device interfaces as the production device path rather than bypassing GridMind's ingress architecture.
+The simulator must use the same MQTT/device interfaces as the production device path rather than bypassing VoltWeave's ingress architecture.
 
 ---
 
@@ -4141,7 +4140,7 @@ Required alerts:
 
 # 99. Full Definition of Done
 
-GridMind is complete only when all of the following work together.
+VoltWeave is complete only when all of the following work together.
 
 ## Identity / Tenant
 
@@ -4269,7 +4268,7 @@ The complete project shall demonstrate this flow without bypassing its productio
 7. EV/charger is registered.
 8. Devices are securely provisioned.
 9. Simulated devices connect through MQTT.
-10. Telemetry enters GridMind through the ingestion service.
+10. Telemetry enters VoltWeave through the ingestion service.
 11. Kafka transports raw/normalized telemetry.
 12. TimescaleDB stores telemetry.
 13. Digital twins update.
@@ -4395,7 +4394,7 @@ The complete project shall demonstrate this flow without bypassing its productio
 
 # 102. Final Product Completion Definition
 
-GridMind is complete when it can:
+VoltWeave is complete when it can:
 
 ```text
 OBSERVE

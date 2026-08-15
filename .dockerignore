@@ -2,8 +2,6 @@
 .github
 .idea
 .vscode
-.agents
-.codex
 **/target
 **/node_modules
 **/.next
@@ -15,4 +13,3 @@
 docs/guides.local
 docs/CODE_WALKTHROUGH.local.md
 tests/e2e/target
-
