@@ -9,7 +9,9 @@ FROM node:24-alpine AS build
 WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
+ARG API_GATEWAY_URL=http://localhost:8080
 ARG NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8180
+ENV API_GATEWAY_URL=${API_GATEWAY_URL}
 ENV NEXT_PUBLIC_KEYCLOAK_URL=${NEXT_PUBLIC_KEYCLOAK_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build

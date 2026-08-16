@@ -62,6 +62,14 @@ $keycloakBase = "http://localhost:$(Get-Setting 'KEYCLOAK_HOST_PORT')"
 $web = Invoke-WebRequest $webBase -UseBasicParsing
 Assert-Equal "web HTTP status" $web.StatusCode 200
 
+try {
+  Invoke-WebRequest "$webBase/backend/api/v1/organizations" -UseBasicParsing | Out-Null
+  $webProxyStatus = 200
+} catch {
+  $webProxyStatus = [int]$_.Exception.Response.StatusCode
+}
+Assert-Equal "web Gateway proxy rejection" $webProxyStatus 401
+
 $health = Invoke-RestMethod "$gatewayBase/actuator/health"
 Assert-Equal "gateway health" $health.status "UP"
 
@@ -85,7 +93,7 @@ $token = Invoke-RestMethod -Method Post `
 if (-not $token.access_token) { throw "Keycloak did not issue an access token." }
 Write-Host "PASS customer token"
 
-$authorized = Invoke-WebRequest "$gatewayBase/api/v1/organizations" `
+$authorized = Invoke-WebRequest "$webBase/backend/api/v1/organizations" `
   -Headers @{ Authorization = "Bearer $($token.access_token)" } `
   -UseBasicParsing
 Assert-Equal "authenticated Gateway route" $authorized.StatusCode 200
