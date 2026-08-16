@@ -253,7 +253,6 @@ The following remain outside the V1 boundary:
 ## Documentation
 
 - [V1 system requirements](docs/VOLTWEAVE_SRS.md)
-- [V1 architecture and delivery plan](docs/VOLTWEAVE_V1_PLAN.md)
 - [Target production-system specification](docs/VOLTWEAVE_TARGET_SRS.md)
 - [Testing guide](docs/TESTING.md)
 - [Demo walkthrough](docs/V1_DEMO.md)
