@@ -150,8 +150,8 @@ class OptimizationApplicationServiceTests {
         var preview = preview(previewId);
         when(optimizationRepository.find(ORGANIZATION_ID, VPP_ID, previewId))
                 .thenReturn(Optional.of(preview));
-        when(optimizationRepository.isSourceSnapshotValid(ORGANIZATION_ID, previewId, NOW))
-                .thenReturn(true);
+        when(optimizationRepository.validSourceSnapshotDuration(ORGANIZATION_ID, previewId, NOW))
+                .thenReturn(Optional.of(Duration.ofMinutes(30)));
         when(forecastRepository.latest(ORGANIZATION_ID, VPP_ID))
                 .thenReturn(Optional.of(forecast(startAt)));
 
@@ -161,9 +161,14 @@ class OptimizationApplicationServiceTests {
 
         assertEquals(2, input.baselinePoints().size());
         assertEquals(1, input.allocations().size());
+        assertEquals(1800, input.dispatchDurationSeconds());
 
-        when(optimizationRepository.isSourceSnapshotValid(ORGANIZATION_ID, previewId, NOW))
-                .thenReturn(false);
+        assertThrows(IllegalArgumentException.class, () -> service.dispatchInput(
+                ORGANIZATION_ID, VPP_ID, previewId, startAt, startAt.plusSeconds(2700)
+        ));
+
+        when(optimizationRepository.validSourceSnapshotDuration(ORGANIZATION_ID, previewId, NOW))
+                .thenReturn(Optional.empty());
         assertThrows(IllegalStateException.class, () -> service.dispatchInput(
                 ORGANIZATION_ID, VPP_ID, previewId, startAt, startAt.plusSeconds(1800)
         ));

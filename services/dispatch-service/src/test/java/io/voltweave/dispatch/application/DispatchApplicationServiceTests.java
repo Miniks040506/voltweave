@@ -102,6 +102,15 @@ class DispatchApplicationServiceTests {
         assertThrows(IllegalStateException.class, () -> service.create(command("key")));
     }
 
+    @Test
+    void rejectsInputForAnotherOptimizationInterval() {
+        when(intelligenceClient.input(any(), any(), any(), any(), any()))
+                .thenReturn(input(true, Duration.ofMinutes(45).toSeconds()));
+
+        assertThrows(IllegalStateException.class, () -> service.create(command("interval-key")));
+        verify(repository, never()).insert(any(), any(), any());
+    }
+
     private static CreateDispatchCommand command(String key) {
         return new CreateDispatchCommand(
                 ORGANIZATION_ID, VPP_ID, PREVIEW_ID, "REDUCE_DEMAND", START,
@@ -110,8 +119,13 @@ class DispatchApplicationServiceTests {
     }
 
     private static DispatchInput input(boolean feasible) {
+        return input(feasible, Duration.ofMinutes(30).toSeconds());
+    }
+
+    private static DispatchInput input(boolean feasible, long dispatchDurationSeconds) {
         return new DispatchInput(
                 PREVIEW_ID, 2, ORGANIZATION_ID, VPP_ID,
+                dispatchDurationSeconds,
                 new BigDecimal("5"), new BigDecimal("6"), new BigDecimal("6"), feasible,
                 UUID.randomUUID(), 3, "same-time-weighted-average", "1.0",
                 NOW.plusSeconds(300),

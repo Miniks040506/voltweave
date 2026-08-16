@@ -127,18 +127,20 @@ class OptimizationPreviewApiIntegrationTests {
         UUID previewId = jdbcClient.sql("SELECT id FROM optimization_previews")
                 .query(UUID.class).single();
         String internalPath = "/internal/v1/vpps/" + VPP_ID + "/dispatch-inputs/" + previewId;
+        Instant startAt = Instant.now().plusSeconds(900);
+        Instant endAt = startAt.plusSeconds(3600);
 
         mockMvc.perform(get(internalPath).with(operatorJwt())
                         .param("organizationId", ORGANIZATION_ID.toString())
-                        .param("startAt", Instant.now().plusSeconds(900).toString())
-                        .param("endAt", Instant.now().plusSeconds(1800).toString()))
+                        .param("startAt", startAt.toString())
+                        .param("endAt", endAt.toString()))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(get(internalPath).with(jwt().jwt(token -> token
                                 .claim("azp", "voltweave-internal")))
                         .param("organizationId", ORGANIZATION_ID.toString())
-                        .param("startAt", Instant.now().plusSeconds(900).toString())
-                        .param("endAt", Instant.now().plusSeconds(1800).toString()))
+                        .param("startAt", startAt.toString())
+                        .param("endAt", endAt.toString()))
                 .andExpect(status().isUnprocessableContent());
     }
 

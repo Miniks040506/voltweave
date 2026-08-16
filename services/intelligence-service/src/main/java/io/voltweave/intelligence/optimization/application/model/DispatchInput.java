@@ -10,6 +10,7 @@ public record DispatchInput(
         long optimizationPreviewVersion,
         UUID organizationId,
         UUID vppId,
+        long dispatchDurationSeconds,
         BigDecimal targetPowerKw,
         BigDecimal requiredPowerKw,
         BigDecimal plannedPowerKw,

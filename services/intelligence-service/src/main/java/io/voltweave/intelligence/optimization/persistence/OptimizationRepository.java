@@ -1,6 +1,7 @@
 package io.voltweave.intelligence.optimization.persistence;
 
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -155,21 +156,24 @@ public class OptimizationRepository {
                 )).optional().map(this::withCandidates);
     }
 
-    public boolean isSourceSnapshotValid(UUID organizationId, UUID previewId, Instant now) {
+    public Optional<Duration> validSourceSnapshotDuration(
+            UUID organizationId,
+            UUID previewId,
+            Instant now
+    ) {
         return jdbcClient.sql("""
-                SELECT EXISTS (
-                    SELECT 1 FROM optimization_previews preview
-                    JOIN flexibility_snapshots snapshot
-                      ON snapshot.vpp_organization_id = preview.vpp_organization_id
-                     AND snapshot.id = preview.flexibility_snapshot_id
-                    WHERE preview.vpp_organization_id = :organizationId
-                      AND preview.id = :previewId AND snapshot.valid_until > :now
-                )
+                SELECT snapshot.dispatch_duration_seconds
+                FROM optimization_previews preview
+                JOIN flexibility_snapshots snapshot
+                  ON snapshot.vpp_organization_id = preview.vpp_organization_id
+                 AND snapshot.id = preview.flexibility_snapshot_id
+                WHERE preview.vpp_organization_id = :organizationId
+                  AND preview.id = :previewId AND snapshot.valid_until > :now
                 """)
                 .param("organizationId", organizationId)
                 .param("previewId", previewId)
                 .param("now", Timestamp.from(now))
-                .query(Boolean.class).single();
+                .query(Long.class).optional().map(Duration::ofSeconds);
     }
 
     private OptimizationPreview withCandidates(PreviewHeader header) {

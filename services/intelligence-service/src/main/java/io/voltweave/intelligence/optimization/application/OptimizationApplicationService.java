@@ -3,6 +3,7 @@ package io.voltweave.intelligence.optimization.application;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -148,8 +149,15 @@ public class OptimizationApplicationService {
         }
         var preview = optimizationRepository.find(organizationId, vppId, previewId)
                 .orElseThrow(() -> new IllegalStateException("Optimization preview is unavailable"));
-        if (!optimizationRepository.isSourceSnapshotValid(organizationId, previewId, now)) {
-            throw new IllegalStateException("Optimization preview source snapshot has expired");
+        Duration dispatchDuration = optimizationRepository.validSourceSnapshotDuration(
+                organizationId, previewId, now
+        ).orElseThrow(() -> new IllegalStateException(
+                "Optimization preview source snapshot has expired"
+        ));
+        if (!Duration.between(startAt, endAt).equals(dispatchDuration)) {
+            throw new IllegalArgumentException(
+                    "Dispatch duration must match the optimization interval"
+            );
         }
         var forecast = forecastRepository.latest(organizationId, vppId)
                 .filter(value -> value.validUntil().isAfter(now))
@@ -166,6 +174,7 @@ public class OptimizationApplicationService {
         }
         return new DispatchInput(
                 preview.id(), preview.version(), organizationId, vppId,
+                dispatchDuration.toSeconds(),
                 preview.targetPowerKw(), preview.requiredPowerKw(), preview.plannedPowerKw(),
                 preview.feasible(), forecast.id(), forecast.version(), forecast.modelName(),
                 forecast.modelVersion(), forecast.validUntil(),

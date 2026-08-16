@@ -85,6 +85,7 @@ class AutomationWorkflowIntegrationTests {
     private static DispatchInput input(Instant startAt) {
         return new DispatchInput(
                 PREVIEW_ID, 1, ORGANIZATION_ID, VPP_ID,
+                Duration.ofMinutes(30).toSeconds(),
                 new BigDecimal("10"), new BigDecimal("11"), new BigDecimal("11"), true,
                 UUID.randomUUID(), 3, "persistence-v1", "1.0", startAt.plusSeconds(3600),
                 List.of(new Allocation(

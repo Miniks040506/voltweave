@@ -107,6 +107,7 @@ public class IntelligenceDispatchClient {
     public record DispatchInput(
             UUID optimizationPreviewId, long optimizationPreviewVersion,
             UUID organizationId, UUID vppId,
+            long dispatchDurationSeconds,
             BigDecimal targetPowerKw, BigDecimal requiredPowerKw, BigDecimal plannedPowerKw,
             boolean feasible, UUID forecastId, long forecastVersion,
             String forecastModelName, String forecastModelVersion, Instant forecastValidUntil,

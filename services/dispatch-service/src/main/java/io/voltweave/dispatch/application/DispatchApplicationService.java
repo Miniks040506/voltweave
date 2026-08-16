@@ -149,7 +149,8 @@ public class DispatchApplicationService {
     private static void validateInput(CreateDispatchCommand command, DispatchInput input) {
         if (!command.organizationId().equals(input.organizationId())
                 || !command.vppId().equals(input.vppId())
-                || !command.optimizationPreviewId().equals(input.optimizationPreviewId())) {
+                || !command.optimizationPreviewId().equals(input.optimizationPreviewId())
+                || command.duration().toSeconds() != input.dispatchDurationSeconds()) {
             throw new IllegalStateException("Intelligence returned mismatched dispatch input");
         }
         if (!input.feasible() || input.plannedPowerKw().compareTo(input.requiredPowerKw()) < 0
