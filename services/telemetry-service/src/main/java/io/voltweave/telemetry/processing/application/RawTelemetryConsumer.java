@@ -73,7 +73,7 @@ public class RawTelemetryConsumer {
         RawEvent rawEvent;
         try {
             rawJson = objectMapper.readTree(record.value());
-            rawEvent = parse(rawJson);
+            rawEvent = parse(record, rawJson);
         } catch (Exception exception) {
             quarantineMalformed(record, processedAt, exception);
             return;
@@ -127,7 +127,10 @@ public class RawTelemetryConsumer {
         }
     }
 
-    private RawEvent parse(JsonNode event) throws JacksonException {
+    private RawEvent parse(
+            ConsumerRecord<String, String> record,
+            JsonNode event
+    ) throws JacksonException {
         if (event == null || !event.isObject()) {
             throw new IllegalArgumentException("Raw event must be a JSON object");
         }
@@ -144,7 +147,9 @@ public class RawTelemetryConsumer {
         var payload = objectMapper.treeToValue(
                 event.path("payload"), TelemetryRawPayloadV1.class
         );
-        if (!payload.deviceId().toString().equals(event.path("partitionKey").asString())) {
+        String deviceKey = payload.deviceId().toString();
+        if (!deviceKey.equals(event.path("partitionKey").asString())
+                || !deviceKey.equals(record.key())) {
             throw new IllegalArgumentException("Raw event partition key must equal deviceId");
         }
         return new RawEvent(

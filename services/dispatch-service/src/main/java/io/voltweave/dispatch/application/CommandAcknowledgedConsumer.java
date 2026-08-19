@@ -49,7 +49,7 @@ public class CommandAcknowledgedConsumer {
             if (!EventTypes.COMMAND_ACKNOWLEDGED.equals(event.path("eventType").asString())) {
                 return;
             }
-            ParsedAcknowledgement parsed = parse(event);
+            ParsedAcknowledgement parsed = parse(record, event);
             if (!repository.recordAcknowledgementIfNew(
                     parsed.eventId(), EventTypes.COMMAND_ACKNOWLEDGED, clock.instant()
             )) {
@@ -79,7 +79,10 @@ public class CommandAcknowledgedConsumer {
         }
     }
 
-    private ParsedAcknowledgement parse(JsonNode event) throws Exception {
+    private ParsedAcknowledgement parse(
+            ConsumerRecord<String, String> record,
+            JsonNode event
+    ) throws Exception {
         if (event.path("eventVersion").asInt() != 1
                 || !"telemetry-service".equals(event.path("producer").asString())) {
             throw new IllegalArgumentException("Unsupported acknowledgement contract");
@@ -87,7 +90,9 @@ public class CommandAcknowledgedConsumer {
         var payload = objectMapper.treeToValue(
                 event.path("payload"), CommandAcknowledgedPayloadV1.class
         );
-        if (!payload.deviceId().toString().equals(event.path("partitionKey").asString())) {
+        String deviceKey = payload.deviceId().toString();
+        if (!deviceKey.equals(event.path("partitionKey").asString())
+                || !deviceKey.equals(record.key())) {
             throw new IllegalArgumentException("Acknowledgement partition key must equal deviceId");
         }
         return new ParsedAcknowledgement(

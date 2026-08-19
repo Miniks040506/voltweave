@@ -38,6 +38,7 @@ public class ForecastRepository {
                     FROM energy_observations observation
                     JOIN vpp_site_projection member
                       ON member.site_id = observation.site_id
+                     AND member.vpp_organization_id = observation.organization_id
                      AND member.vpp_organization_id = :organizationId
                      AND member.vpp_id = :vppId
                      AND member.active

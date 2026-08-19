@@ -1,6 +1,7 @@
 package io.voltweave.telemetry.command.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -125,6 +126,21 @@ class CommandRequestedConsumerIntegrationTests {
         repository.markFailed(commandId(), restartAt.plusSeconds(2), "broker offline");
         assertThat(jdbcClient.sql("SELECT attempts FROM command_deliveries")
                 .query(Integer.class).single()).isEqualTo(1);
+    }
+
+    @Test
+    void rejectsACommandWhoseKafkaKeyDisagreesWithItsDevice() throws Exception {
+        var valid = record(UUID.randomUUID());
+        var mismatched = new ConsumerRecord<>(
+                valid.topic(), valid.partition(), valid.offset(),
+                UUID.randomUUID().toString(), valid.value()
+        );
+
+        assertThatThrownBy(() -> consumer.consume(mismatched))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid command.requested event");
+        assertThat(count("event_inbox")).isZero();
+        assertThat(count("command_deliveries")).isZero();
     }
 
     private ConsumerRecord<String, String> record(UUID eventId) throws Exception {

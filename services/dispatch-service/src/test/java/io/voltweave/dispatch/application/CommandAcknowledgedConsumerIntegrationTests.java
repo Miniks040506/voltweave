@@ -101,6 +101,21 @@ class CommandAcknowledgedConsumerIntegrationTests {
         assertThat(commandStatus(FIRST_COMMAND_ID)).isEqualTo("REQUESTED");
     }
 
+    @Test
+    void rejectsAnAcknowledgementWhoseKafkaKeyDisagreesWithItsDevice() throws Exception {
+        var valid = accepted(UUID.randomUUID(), FIRST_COMMAND_ID, FIRST_DEVICE_ID);
+        var mismatched = new ConsumerRecord<>(
+                valid.topic(), valid.partition(), valid.offset(),
+                SECOND_DEVICE_ID.toString(), valid.value()
+        );
+
+        assertThatThrownBy(() -> consumer.consume(mismatched))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("partition key");
+        assertThat(commandStatus(FIRST_COMMAND_ID)).isEqualTo("REQUESTED");
+        assertThat(count("event_inbox")).isZero();
+    }
+
     private ConsumerRecord<String, String> accepted(
             UUID eventId,
             UUID commandId,

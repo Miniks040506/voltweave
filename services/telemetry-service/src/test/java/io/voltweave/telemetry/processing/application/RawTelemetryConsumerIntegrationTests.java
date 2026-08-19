@@ -134,6 +134,21 @@ class RawTelemetryConsumerIntegrationTests {
                 .isEqualTo("INVALID_RAW_EVENT");
     }
 
+    @Test
+    void quarantinesARecordWhoseKafkaKeyDisagreesWithItsDevice() {
+        var valid = record(UUID.randomUUID(), 9, validSample(9, "60"), 43);
+        var mismatched = new ConsumerRecord<>(
+                valid.topic(), valid.partition(), valid.offset(),
+                UUID.randomUUID().toString(), valid.value()
+        );
+
+        consumer.consume(mismatched);
+
+        assertThat(count("event_inbox")).isZero();
+        assertThat(count("event_outbox")).isZero();
+        assertThat(count("quarantined_telemetry")).isEqualTo(1);
+    }
+
     private ConsumerRecord<String, String> record(
             UUID eventId,
             long sequence,

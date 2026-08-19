@@ -51,7 +51,7 @@ public class CommandRequestedConsumer {
             if (!EventTypes.COMMAND_REQUESTED.equals(event.path("eventType").asString())) {
                 return;
             }
-            ParsedCommand parsed = parse(event);
+            ParsedCommand parsed = parse(record, event);
             if (!repository.recordEventIfNew(
                     parsed.eventId(), EventTypes.COMMAND_REQUESTED, clock.instant()
             )) {
@@ -71,7 +71,10 @@ public class CommandRequestedConsumer {
         }
     }
 
-    private ParsedCommand parse(JsonNode event) throws Exception {
+    private ParsedCommand parse(
+            ConsumerRecord<String, String> record,
+            JsonNode event
+    ) throws Exception {
         String producer = event.path("producer").asString();
         if (event.path("eventVersion").asInt() != 1 || !"dispatch-service".equals(producer)) {
             throw new IllegalArgumentException("Unsupported command contract");
@@ -82,7 +85,9 @@ public class CommandRequestedConsumer {
         var payload = objectMapper.treeToValue(
                 event.path("payload"), CommandRequestedPayloadV1.class
         );
-        if (!payload.deviceId().toString().equals(event.path("partitionKey").asString())) {
+        String deviceKey = payload.deviceId().toString();
+        if (!deviceKey.equals(event.path("partitionKey").asString())
+                || !deviceKey.equals(record.key())) {
             throw new IllegalArgumentException("Command partition key must equal deviceId");
         }
         return new ParsedCommand(eventId, organizationId, correlationId, payload);

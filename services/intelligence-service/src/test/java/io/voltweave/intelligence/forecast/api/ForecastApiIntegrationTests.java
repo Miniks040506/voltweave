@@ -113,6 +113,21 @@ class ForecastApiIntegrationTests {
     }
 
     @Test
+    void excludesAnotherOrganizationsObservationsForTheSameSiteId() throws Exception {
+        insertTrainingDay(
+                OTHER_ORGANIZATION_ID, targetStart.minus(1, ChronoUnit.DAYS), "100", "0"
+        );
+        insertTrainingDay(
+                OTHER_ORGANIZATION_ID, targetStart.minus(2, ChronoUnit.DAYS), "100", "0"
+        );
+        when(accessClient.requireVppAccess("operator-19", VPP_ID))
+                .thenReturn(ORGANIZATION_ID);
+
+        generate().andExpect(status().isCreated())
+                .andExpect(jsonPath("$.points[0].baselineGridImportKw").value(11.0));
+    }
+
+    @Test
     void scopesLatestByOrganizationAndRejectsBaselineMutation() throws Exception {
         when(accessClient.requireVppAccess("operator-19", VPP_ID))
                 .thenReturn(ORGANIZATION_ID);
@@ -162,11 +177,21 @@ class ForecastApiIntegrationTests {
     }
 
     private void insertTrainingDay(Instant at, String load, String solar) {
-        insertObservation(UUID.randomUUID(), at, "GRID_IMPORT", load);
-        insertObservation(UUID.randomUUID(), at, "SOLAR_GENERATION", solar);
+        insertTrainingDay(ORGANIZATION_ID, at, load, solar);
+    }
+
+    private void insertTrainingDay(
+            UUID organizationId,
+            Instant at,
+            String load,
+            String solar
+    ) {
+        insertObservation(organizationId, UUID.randomUUID(), at, "GRID_IMPORT", load);
+        insertObservation(organizationId, UUID.randomUUID(), at, "SOLAR_GENERATION", solar);
     }
 
     private void insertObservation(
+            UUID organizationId,
             UUID deviceId,
             Instant at,
             String type,
@@ -181,7 +206,7 @@ class ForecastApiIntegrationTests {
                     :observedAt, :receivedAt, :energyType, :powerKw, 'VALID'
                 )
                 """)
-                .param("organizationId", ORGANIZATION_ID)
+                .param("organizationId", organizationId)
                 .param("siteId", SITE_ID)
                 .param("deviceId", deviceId)
                 .param("observedAt", Timestamp.from(at))
