@@ -63,7 +63,7 @@ class DispatchCompletionIntegrationTests {
 
     @Test
     void completesOnceAndPublishesImmutableCompletionFacts() throws Exception {
-        UUID dispatchId = seedDispatch("ACTIVE", new BigDecimal("9.500"));
+        UUID dispatchId = seedDispatch("ACTIVE", new BigDecimal("9.500001"));
 
         service.complete(dispatchId, END.plusSeconds(1));
         service.complete(dispatchId, END.plusSeconds(2));
@@ -77,7 +77,7 @@ class DispatchCompletionIntegrationTests {
                 .isEqualTo(EventTypes.DISPATCH_COMPLETED);
         assertThat(event.path("partitionKey").asString()).isEqualTo(dispatchId.toString());
         assertThat(event.path("payload").path("deliveredEnergyKwh").decimalValue())
-                .isEqualByComparingTo("9.500");
+                .isEqualTo(new BigDecimal("9.500001"));
         assertThat(jdbcClient.sql("SELECT topic FROM event_outbox")
                 .query(String.class).single()).isEqualTo(EventTopics.DISPATCH_LIFECYCLE_V1);
     }

@@ -55,4 +55,16 @@ class PayloadContractTests {
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("completionStatus");
     }
+
+    @Test
+    void canonicalizesDeliveredEnergyToSixDecimals() {
+        Instant now = Instant.parse("2026-08-13T02:00:00Z");
+        var payload = new DispatchCompletedPayloadV1(
+                UUID.randomUUID(), UUID.randomUUID(), "COMPLETED",
+                BigDecimal.TEN, new BigDecimal("1.2345678"), UUID.randomUUID(), 1,
+                now.minusSeconds(300), now, now
+        );
+
+        assertThat(payload.deliveredEnergyKwh()).isEqualTo(new BigDecimal("1.234568"));
+    }
 }

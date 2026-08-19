@@ -14,7 +14,11 @@
     "vppId": { "type": "string", "format": "uuid" },
     "completionStatus": { "type": "string", "enum": ["COMPLETED", "PARTIALLY_COMPLETED"] },
     "targetPowerKw": { "type": "number", "exclusiveMinimum": 0 },
-    "deliveredEnergyKwh": { "type": "number", "minimum": 0 },
+    "deliveredEnergyKwh": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Delivered kWh canonicalized to six decimals using HALF_UP rounding."
+    },
     "baselineId": { "type": "string", "format": "uuid" },
     "baselineVersion": { "type": "integer", "minimum": 1 },
     "scheduledStartAt": { "type": "string", "format": "date-time" },

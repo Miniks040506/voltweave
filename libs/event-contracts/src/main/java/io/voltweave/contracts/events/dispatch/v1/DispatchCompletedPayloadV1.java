@@ -1,6 +1,7 @@
 package io.voltweave.contracts.events.dispatch.v1;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -17,6 +18,8 @@ public record DispatchCompletedPayloadV1(
         Instant scheduledEndAt,
         Instant completedAt
 ) {
+    public static final int DELIVERED_ENERGY_SCALE = 6;
+
     public DispatchCompletedPayloadV1 {
         Objects.requireNonNull(dispatchId, "dispatchId is required");
         Objects.requireNonNull(vppId, "vppId is required");
@@ -30,6 +33,9 @@ public record DispatchCompletedPayloadV1(
         if (deliveredEnergyKwh == null || deliveredEnergyKwh.signum() < 0) {
             throw new IllegalArgumentException("deliveredEnergyKwh cannot be negative");
         }
+        deliveredEnergyKwh = deliveredEnergyKwh.setScale(
+                DELIVERED_ENERGY_SCALE, RoundingMode.HALF_UP
+        );
         Objects.requireNonNull(baselineId, "baselineId is required");
         if (baselineVersion < 1) {
             throw new IllegalArgumentException("baselineVersion must be positive");

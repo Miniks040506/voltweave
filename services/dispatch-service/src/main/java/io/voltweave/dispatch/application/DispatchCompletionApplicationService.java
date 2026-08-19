@@ -51,8 +51,7 @@ public class DispatchCompletionApplicationService {
         var completing = new DispatchState(dispatch.status())
                 .transitionTo(DispatchStatus.COMPLETING).status();
         completionRepository.transition(dispatchId, dispatch.status(), completing);
-        BigDecimal delivered = completionRepository.deliveredEnergy(dispatchId)
-                .setScale(3, RoundingMode.HALF_UP);
+        BigDecimal delivered = completionRepository.deliveredEnergy(dispatchId);
         BigDecimal expected = expectedEnergy(
                 dispatch.targetPowerKw(), dispatch.scheduledStartAt(), dispatch.scheduledEndAt()
         );

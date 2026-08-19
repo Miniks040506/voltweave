@@ -86,13 +86,13 @@ class SettlementWorkflowIntegrationTests {
         assertThat(decimal("expected_energy_kwh", "settlements"))
                 .isEqualByComparingTo("10.000000");
         assertThat(decimal("delivered_energy_kwh", "settlements"))
-                .isEqualByComparingTo("9.500000");
+                .isEqualByComparingTo("9.456789");
         assertThat(decimal("achievement_percent", "settlements"))
-                .isEqualByComparingTo("95.000");
+                .isEqualByComparingTo("94.568");
         assertThat(decimal("energy_kwh", "reward_ledger_entries"))
-                .isEqualByComparingTo("9.500000");
+                .isEqualByComparingTo("9.456789");
         assertThat(decimal("amount", "reward_ledger_entries"))
-                .isEqualByComparingTo("2.3750");
+                .isEqualByComparingTo("2.3642");
     }
 
     @Test
@@ -132,7 +132,7 @@ class SettlementWorkflowIntegrationTests {
 
         mockMvc.perform(get("/api/v1/customers/me/earnings").with(customerJwt()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalAmount").value(2.375))
+                .andExpect(jsonPath("$.totalAmount").value(2.3642))
                 .andExpect(jsonPath("$.currency").value("VWC"))
                 .andExpect(jsonPath("$.entries.length()").value(1))
                 .andExpect(jsonPath("$.entries[0].siteId").value(SITE_ID.toString()));
@@ -205,14 +205,14 @@ class SettlementWorkflowIntegrationTests {
                         "expected_energy_kwh,delivered_energy_kwh,achievement_percent"
                 )))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString(
-                        SITE_ID + ",10.000000,9.500000,95.000,2.3750,VWC"
+                        SITE_ID + ",10.000000,9.456789,94.568,2.3642,VWC"
                 )));
     }
 
     private ConsumerRecord<String, String> completionRecord() throws Exception {
         var payload = new DispatchCompletedPayloadV1(
                 DISPATCH_ID, VPP_ID, "PARTIALLY_COMPLETED", new BigDecimal("10"),
-                new BigDecimal("9.5"), BASELINE_ID, 2,
+                new BigDecimal("9.4567894"), BASELINE_ID, 2,
                 END.minusSeconds(3_600), END, END.plusSeconds(1)
         );
         var event = EventEnvelopeV1.create(
@@ -236,12 +236,12 @@ class SettlementWorkflowIntegrationTests {
                         new Participant(
                                 SITE_ID, UUID.randomUUID(), "BATTERY",
                                 new BigDecimal("6"), new BigDecimal("6"),
-                                new BigDecimal("5.5")
+                                new BigDecimal("5.123456")
                         ),
                         new Participant(
                                 SITE_ID, UUID.randomUUID(), "EV_CHARGER",
                                 new BigDecimal("4"), new BigDecimal("4"),
-                                new BigDecimal("4")
+                                new BigDecimal("4.333333")
                         )
                 )
         );
