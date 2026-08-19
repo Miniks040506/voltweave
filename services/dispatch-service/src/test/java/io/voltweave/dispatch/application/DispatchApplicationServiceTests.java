@@ -62,7 +62,8 @@ class DispatchApplicationServiceTests {
         Dispatch result = service.create(command("dispatch-key"));
 
         assertEquals(DispatchStatus.SCHEDULED, result.status());
-        assertEquals(new BigDecimal("3.000"), result.allocations().getFirst().expectedEnergyKwh());
+        assertEquals(new BigDecimal("1.500"), result.allocations().getFirst().expectedEnergyKwh());
+        assertEquals(new BigDecimal("7"), result.allocations().getFirst().sourceAvailablePowerKw());
         assertEquals(2, result.baseline().points().size());
         var captor = ArgumentCaptor.forClass(Dispatch.class);
         verify(repository).insert(captor.capture(), any(), any());
@@ -130,10 +131,11 @@ class DispatchApplicationServiceTests {
                 UUID.randomUUID(), 3, "same-time-weighted-average", "1.0",
                 NOW.plusSeconds(300),
                 List.of(new Allocation(
-                        UUID.randomUUID(), UUID.randomUUID(), "BATTERY",
-                        new BigDecimal("6"), new BigDecimal("3"), BigDecimal.ONE,
+                        UUID.randomUUID(), UUID.randomUUID(), "EV_CHARGER",
+                        new BigDecimal("7"), new BigDecimal("3"), new BigDecimal("3"),
+                        BigDecimal.ONE,
                         BigDecimal.ONE, BigDecimal.ONE, new BigDecimal("0.8"), BigDecimal.ONE,
-                        new BigDecimal("0.95"), new BigDecimal("6"), true
+                        new BigDecimal("0.95"), new BigDecimal("3"), true
                 )),
                 List.of(
                         new BaselinePoint(START, new BigDecimal("10")),

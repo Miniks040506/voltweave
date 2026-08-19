@@ -321,6 +321,7 @@ class DispatchApiIntegrationTests {
                 UUID.randomUUID(), 3, "persistence-v1", "1.0", startAt.plusSeconds(3600),
                 List.of(new Allocation(
                         siteId, deviceId, "BATTERY", new BigDecimal("12"),
+                        new BigDecimal("12"),
                         new BigDecimal("6"), new BigDecimal("0.9"), new BigDecimal("0.8"),
                         BigDecimal.ONE, new BigDecimal("0.9"), BigDecimal.ONE,
                         new BigDecimal("0.92"), new BigDecimal("11"), true

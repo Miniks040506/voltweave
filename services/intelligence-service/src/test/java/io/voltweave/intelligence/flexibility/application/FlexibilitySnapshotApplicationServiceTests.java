@@ -74,6 +74,8 @@ class FlexibilitySnapshotApplicationServiceTests {
                 .compareTo(new BigDecimal("5.000")));
         assertEquals(0, snapshot.candidates().get(1).upwardFlexibilityKw()
                 .compareTo(new BigDecimal("1.000")));
+        assertEquals(0, snapshot.candidates().get(1).sourcePowerKw()
+                .compareTo(new BigDecimal("4.000")));
         assertEquals("SITE_IMPORT_LIMIT", snapshot.candidates().get(1).limitingReason());
         verify(repository).insert(snapshot);
     }

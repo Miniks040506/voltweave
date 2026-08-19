@@ -177,7 +177,10 @@ public class FlexibilitySnapshotApplicationService {
                 return unavailable(resource, "EV_CHARGER".equals(resource.deviceType())
                         ? "DEPARTURE_CONSTRAINT" : "NO_AVAILABLE_ENERGY");
             }
-            return new CandidateDraft(resource, rounded(rawPower), null);
+            BigDecimal sourcePower = "EV_CHARGER".equals(resource.deviceType())
+                    ? value.activePowerKw().setScale(3, RoundingMode.HALF_UP)
+                    : rounded(rawPower);
+            return new CandidateDraft(resource, sourcePower, rounded(rawPower), null);
         } catch (NullPointerException | IllegalArgumentException exception) {
             return unavailable(resource, "CONFIGURATION_INVALID");
         }
@@ -212,7 +215,7 @@ public class FlexibilitySnapshotApplicationService {
             PortfolioFlexibilityResource resource,
             String reason
     ) {
-        return new CandidateDraft(resource, ZERO, reason);
+        return new CandidateDraft(resource, ZERO, ZERO, reason);
     }
 
     private static void validateDuration(Duration duration) {
@@ -227,6 +230,7 @@ public class FlexibilitySnapshotApplicationService {
 
     private record CandidateDraft(
             PortfolioFlexibilityResource resource,
+            BigDecimal sourcePowerKw,
             BigDecimal rawPowerKw,
             String reason
     ) {
@@ -238,8 +242,8 @@ public class FlexibilitySnapshotApplicationService {
             BigDecimal energy = powerKw.multiply(BigDecimal.valueOf(duration.toSeconds()))
                     .divide(BigDecimal.valueOf(3_600), 3, RoundingMode.HALF_UP);
             return new FlexibilityCandidate(
-                    resource.siteId(), resource.deviceId(), resource.deviceType(), rawPowerKw,
-                    powerKw, energy, unavailableReason
+                    resource.siteId(), resource.deviceId(), resource.deviceType(), sourcePowerKw,
+                    rawPowerKw, powerKw, energy, unavailableReason
             );
         }
     }

@@ -88,7 +88,7 @@ public class RebalanceApplicationService {
                 .filter(candidate -> candidate.allocatedPowerKw().signum() > 0)
                 .map(candidate -> new ReplacementAllocation(
                         candidate.siteId(), candidate.deviceId(), candidate.deviceType(),
-                        candidate.availablePowerKw(), candidate.allocatedPowerKw(),
+                        candidate.sourcePowerKw(), candidate.allocatedPowerKw(),
                         expectedEnergy(candidate.allocatedPowerKw(), remaining), candidate.score()
                 )).toList();
         BigDecimal replacementPower = allocations.stream()

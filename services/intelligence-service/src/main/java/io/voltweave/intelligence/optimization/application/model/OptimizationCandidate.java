@@ -7,6 +7,7 @@ public record OptimizationCandidate(
         UUID siteId,
         UUID deviceId,
         String deviceType,
+        BigDecimal sourcePowerKw,
         BigDecimal availablePowerKw,
         BigDecimal availableEnergyKwh,
         BigDecimal reliability,

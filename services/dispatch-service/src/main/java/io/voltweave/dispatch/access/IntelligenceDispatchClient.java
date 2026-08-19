@@ -117,7 +117,7 @@ public class IntelligenceDispatchClient {
 
     public record Allocation(
             UUID siteId, UUID deviceId, String deviceType,
-            BigDecimal availablePowerKw, BigDecimal availableEnergyKwh,
+            BigDecimal sourcePowerKw, BigDecimal availablePowerKw, BigDecimal availableEnergyKwh,
             BigDecimal reliability, BigDecimal availableSoc, BigDecimal responseSpeed,
             BigDecimal lowDegradationCost, BigDecimal customerPreference,
             BigDecimal score, BigDecimal allocatedPowerKw, boolean eligible

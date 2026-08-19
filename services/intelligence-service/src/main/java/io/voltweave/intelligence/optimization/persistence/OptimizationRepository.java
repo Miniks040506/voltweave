@@ -78,12 +78,14 @@ public class OptimizationRepository {
             jdbcClient.sql("""
                     INSERT INTO optimization_candidates (
                         vpp_organization_id, preview_id, site_id, device_id, device_type,
-                        available_power_kw, available_energy_kwh, reliability, available_soc,
+                        source_power_kw, available_power_kw, available_energy_kwh,
+                        reliability, available_soc,
                         response_speed, low_degradation_cost, customer_preference, score,
                         allocated_power_kw, eligible
                     ) VALUES (
                         :organizationId, :previewId, :siteId, :deviceId, :deviceType,
-                        :availablePowerKw, :availableEnergyKwh, :reliability, :availableSoc,
+                        :sourcePowerKw, :availablePowerKw, :availableEnergyKwh,
+                        :reliability, :availableSoc,
                         :responseSpeed, :degradationCost, :preference, :score,
                         :allocatedPowerKw, :eligible
                     )
@@ -93,6 +95,7 @@ public class OptimizationRepository {
                     .param("siteId", candidate.siteId())
                     .param("deviceId", candidate.deviceId())
                     .param("deviceType", candidate.deviceType())
+                    .param("sourcePowerKw", candidate.sourcePowerKw())
                     .param("availablePowerKw", candidate.availablePowerKw())
                     .param("availableEnergyKwh", candidate.availableEnergyKwh())
                     .param("reliability", candidate.reliability())
@@ -178,7 +181,8 @@ public class OptimizationRepository {
 
     private OptimizationPreview withCandidates(PreviewHeader header) {
         List<OptimizationCandidate> candidates = jdbcClient.sql("""
-                SELECT * FROM optimization_candidates
+                SELECT *, COALESCE(source_power_kw, available_power_kw) AS resolved_source_power_kw
+                FROM optimization_candidates
                 WHERE vpp_organization_id = :organizationId AND preview_id = :previewId
                 ORDER BY allocated_power_kw DESC, score DESC, device_id
                 """)
@@ -187,6 +191,7 @@ public class OptimizationRepository {
                 .query((row, rowNumber) -> new OptimizationCandidate(
                         row.getObject("site_id", UUID.class),
                         row.getObject("device_id", UUID.class), row.getString("device_type"),
+                        row.getBigDecimal("resolved_source_power_kw"),
                         row.getBigDecimal("available_power_kw"),
                         row.getBigDecimal("available_energy_kwh"),
                         row.getBigDecimal("reliability"), row.getBigDecimal("available_soc"),

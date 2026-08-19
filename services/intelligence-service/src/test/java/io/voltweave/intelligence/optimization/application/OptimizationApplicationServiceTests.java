@@ -77,6 +77,7 @@ class OptimizationApplicationServiceTests {
         assertEquals("00000000-0000-0000-0000-000000000002",
                 result.candidates().getFirst().deviceId().toString());
         assertEquals(new BigDecimal("4.000"), result.candidates().getFirst().allocatedPowerKw());
+        assertEquals(new BigDecimal("4"), result.candidates().getFirst().sourcePowerKw());
         assertTrue(result.candidates().getFirst().eligible());
         assertFalse(result.candidates().getLast().eligible());
 
@@ -194,20 +195,21 @@ class OptimizationApplicationServiceTests {
     ) {
         return new FlexibilityCandidate(
                 UUID.randomUUID(), UUID.fromString(deviceId), type,
-                new BigDecimal(power), new BigDecimal(power), new BigDecimal(energy), reason
+                new BigDecimal(power), new BigDecimal(power), new BigDecimal(power),
+                new BigDecimal(energy), reason
         );
     }
 
     private static OptimizationPreview preview(UUID previewId) {
         var allocated = new OptimizationCandidate(
                 UUID.randomUUID(), UUID.randomUUID(), "BATTERY",
-                new BigDecimal("6"), new BigDecimal("3"), BigDecimal.ONE,
+                new BigDecimal("6"), new BigDecimal("6"), new BigDecimal("3"), BigDecimal.ONE,
                 BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
                 BigDecimal.ONE, new BigDecimal("5"), true
         );
         var unused = new OptimizationCandidate(
                 UUID.randomUUID(), UUID.randomUUID(), "EV_CHARGER",
-                new BigDecimal("2"), BigDecimal.ONE, BigDecimal.ONE,
+                new BigDecimal("2"), new BigDecimal("2"), BigDecimal.ONE, BigDecimal.ONE,
                 BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
                 BigDecimal.ONE, BigDecimal.ZERO, true
         );

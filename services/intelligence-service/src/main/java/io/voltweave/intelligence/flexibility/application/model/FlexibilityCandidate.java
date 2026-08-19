@@ -7,6 +7,7 @@ public record FlexibilityCandidate(
         UUID siteId,
         UUID deviceId,
         String deviceType,
+        BigDecimal sourcePowerKw,
         BigDecimal rawUpwardFlexibilityKw,
         BigDecimal upwardFlexibilityKw,
         BigDecimal availableEnergyKwh,

@@ -217,7 +217,7 @@ class UnderDeliveryRecoveryIntegrationTests {
     private Allocation replacementCandidate() {
         return new Allocation(
                 SITE_ID, REPLACEMENT_DEVICE_ID, "BATTERY",
-                new BigDecimal("8"), new BigDecimal("4"), BigDecimal.ONE,
+                new BigDecimal("8"), new BigDecimal("8"), new BigDecimal("4"), BigDecimal.ONE,
                 BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
                 new BigDecimal("0.9"), new BigDecimal("6"), true
         );

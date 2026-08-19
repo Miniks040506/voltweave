@@ -94,7 +94,7 @@ public class DispatchApplicationService {
                 ),
                 input.allocations().stream().map(allocation -> new Dispatch.Allocation(
                         allocation.siteId(), allocation.deviceId(), allocation.deviceType(),
-                        allocation.availablePowerKw(), allocation.allocatedPowerKw(), expectedEnergy(
+                        allocation.sourcePowerKw(), allocation.allocatedPowerKw(), expectedEnergy(
                                 allocation.allocatedPowerKw(), command.duration()
                         ), allocation.score()
                 )).toList()

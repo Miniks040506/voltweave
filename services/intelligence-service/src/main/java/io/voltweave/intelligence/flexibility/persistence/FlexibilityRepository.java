@@ -107,11 +107,11 @@ public class FlexibilityRepository {
             jdbcClient.sql("""
                     INSERT INTO flexibility_candidates (
                         vpp_organization_id, snapshot_id, site_id, device_id, device_type,
-                        raw_upward_flexibility_kw, upward_flexibility_kw,
+                        source_power_kw, raw_upward_flexibility_kw, upward_flexibility_kw,
                         available_energy_kwh, limiting_reason
                     ) VALUES (
                         :organizationId, :snapshotId, :siteId, :deviceId, :deviceType,
-                        :rawPowerKw, :powerKw, :energyKwh, :reason
+                        :sourcePowerKw, :rawPowerKw, :powerKw, :energyKwh, :reason
                     )
                     """)
                     .param("organizationId", snapshot.organizationId())
@@ -119,6 +119,7 @@ public class FlexibilityRepository {
                     .param("siteId", candidate.siteId())
                     .param("deviceId", candidate.deviceId())
                     .param("deviceType", candidate.deviceType())
+                    .param("sourcePowerKw", candidate.sourcePowerKw())
                     .param("rawPowerKw", candidate.rawUpwardFlexibilityKw())
                     .param("powerKw", candidate.upwardFlexibilityKw())
                     .param("energyKwh", candidate.availableEnergyKwh())
@@ -149,7 +150,9 @@ public class FlexibilityRepository {
 
     private FlexibilitySnapshot withCandidates(SnapshotHeader header) {
         List<FlexibilityCandidate> candidates = jdbcClient.sql("""
-                SELECT site_id, device_id, device_type, raw_upward_flexibility_kw,
+                SELECT site_id, device_id, device_type,
+                       COALESCE(source_power_kw, raw_upward_flexibility_kw) AS source_power_kw,
+                       raw_upward_flexibility_kw,
                        upward_flexibility_kw, available_energy_kwh, limiting_reason
                 FROM flexibility_candidates
                 WHERE vpp_organization_id = :organizationId AND snapshot_id = :snapshotId
@@ -160,6 +163,7 @@ public class FlexibilityRepository {
                 .query((row, rowNumber) -> new FlexibilityCandidate(
                         row.getObject("site_id", UUID.class),
                         row.getObject("device_id", UUID.class), row.getString("device_type"),
+                        row.getBigDecimal("source_power_kw"),
                         row.getBigDecimal("raw_upward_flexibility_kw"),
                         row.getBigDecimal("upward_flexibility_kw"),
                         row.getBigDecimal("available_energy_kwh"),

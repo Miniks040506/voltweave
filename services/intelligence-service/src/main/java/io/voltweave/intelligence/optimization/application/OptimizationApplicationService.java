@@ -208,6 +208,7 @@ public class OptimizationApplicationService {
         var allocation = allocations.get(resource.deviceId());
         return new OptimizationCandidate(
                 candidate.siteId(), candidate.deviceId(), candidate.deviceType(),
+                candidate.sourcePowerKw(),
                 candidate.upwardFlexibilityKw(), candidate.availableEnergyKwh(),
                 factor(resource.reliability()), factor(resource.availableSoc()),
                 factor(resource.responseSpeed()), factor(resource.lowDegradationCost()),
