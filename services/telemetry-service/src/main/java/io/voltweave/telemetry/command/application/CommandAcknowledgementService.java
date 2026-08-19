@@ -59,8 +59,14 @@ public class CommandAcknowledgementService {
                     || !command.deviceId().equals(topicIdentity.deviceId())) {
                 throw new IllegalArgumentException("Acknowledgement topic does not own command");
             }
+            var receivedAt = clock.instant();
+            if (commandRepository.timeOutIfExpired(
+                    acknowledgement.commandId(), receivedAt
+            )) {
+                return;
+            }
             if (!commandRepository.acknowledge(
-                    acknowledgement.commandId(), clock.instant()
+                    acknowledgement.commandId(), receivedAt
             )) {
                 return;
             }

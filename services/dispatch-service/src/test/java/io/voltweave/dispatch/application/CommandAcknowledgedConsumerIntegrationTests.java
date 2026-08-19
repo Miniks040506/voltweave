@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -21,6 +23,7 @@ import io.voltweave.contracts.events.EventTypes;
 import io.voltweave.contracts.events.command.v1.CommandAcknowledgedPayloadV1;
 import io.voltweave.contracts.events.v1.EventEnvelopeV1;
 import io.voltweave.dispatch.PostgresTestConfiguration;
+import io.voltweave.dispatch.persistence.CommandRepository;
 import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest(properties = "spring.kafka.listener.auto-startup=false")
@@ -36,8 +39,10 @@ class CommandAcknowledgedConsumerIntegrationTests {
     private static final UUID SECOND_COMMAND_ID = UUID.randomUUID();
     private static final Instant NOW = Instant.parse("2026-08-13T10:00:00Z");
 
-    @Autowired
     private CommandAcknowledgedConsumer consumer;
+
+    @Autowired
+    private CommandRepository repository;
 
     @Autowired
     private JdbcClient jdbcClient;
@@ -47,6 +52,9 @@ class CommandAcknowledgedConsumerIntegrationTests {
 
     @BeforeEach
     void seedPreparingDispatch() {
+        consumer = new CommandAcknowledgedConsumer(
+                objectMapper, repository, Clock.fixed(NOW, ZoneOffset.UTC)
+        );
         jdbcClient.sql("""
                 INSERT INTO dispatches (
                     id, organization_id, vpp_id, optimization_preview_id,
@@ -116,6 +124,26 @@ class CommandAcknowledgedConsumerIntegrationTests {
         assertThat(count("event_inbox")).isZero();
     }
 
+    @Test
+    void timesOutACommandInsteadOfAcceptingALateAcknowledgement() throws Exception {
+        jdbcClient.sql("""
+                UPDATE device_commands
+                SET valid_from = :validFrom, acknowledgement_deadline_at = :deadline
+                WHERE id = :commandId
+                """)
+                .param("validFrom", java.sql.Timestamp.from(NOW.minusSeconds(30)))
+                .param("deadline", java.sql.Timestamp.from(NOW.minusSeconds(1)))
+                .param("commandId", FIRST_COMMAND_ID)
+                .update();
+
+        consumer.consume(accepted(UUID.randomUUID(), FIRST_COMMAND_ID, FIRST_DEVICE_ID));
+
+        assertThat(commandStatus(FIRST_COMMAND_ID)).isEqualTo("TIMED_OUT");
+        assertThat(commandReason(FIRST_COMMAND_ID)).isEqualTo("ACKNOWLEDGEMENT_TIMEOUT");
+        assertThat(dispatchStatus()).isEqualTo("FAILED");
+        assertThat(count("event_inbox")).isEqualTo(1);
+    }
+
     private ConsumerRecord<String, String> accepted(
             UUID eventId,
             UUID commandId,
@@ -162,6 +190,11 @@ class CommandAcknowledgedConsumerIntegrationTests {
 
     private String commandStatus(UUID commandId) {
         return jdbcClient.sql("SELECT status FROM device_commands WHERE id = :id")
+                .param("id", commandId).query(String.class).single();
+    }
+
+    private String commandReason(UUID commandId) {
+        return jdbcClient.sql("SELECT rejection_reason FROM device_commands WHERE id = :id")
                 .param("id", commandId).query(String.class).single();
     }
 

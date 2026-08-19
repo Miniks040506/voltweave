@@ -145,12 +145,42 @@ public class CommandGatewayRepository {
                 )).optional();
     }
 
+    public void timeOutExpired(Instant now, int limit) {
+        jdbcClient.sql("""
+                UPDATE command_deliveries
+                SET status = 'TIMED_OUT', last_error = 'ACKNOWLEDGEMENT_TIMEOUT'
+                WHERE command_id IN (
+                    SELECT command_id FROM command_deliveries
+                    WHERE status IN ('PENDING', 'PUBLISHED')
+                      AND acknowledgement_deadline_at <= :now
+                    ORDER BY acknowledgement_deadline_at, command_id
+                    LIMIT :limit FOR UPDATE SKIP LOCKED
+                )
+                """)
+                .param("now", timestamp(now))
+                .param("limit", limit)
+                .update();
+    }
+
+    public boolean timeOutIfExpired(UUID commandId, Instant now) {
+        return jdbcClient.sql("""
+                UPDATE command_deliveries
+                SET status = 'TIMED_OUT', last_error = 'ACKNOWLEDGEMENT_TIMEOUT'
+                WHERE command_id = :commandId AND status IN ('PENDING', 'PUBLISHED')
+                  AND acknowledgement_deadline_at <= :now
+                """)
+                .param("commandId", commandId)
+                .param("now", timestamp(now))
+                .update() == 1;
+    }
+
     public boolean acknowledge(UUID commandId, Instant acknowledgedAt) {
         return jdbcClient.sql("""
                 UPDATE command_deliveries
                 SET status = 'ACKNOWLEDGED', acknowledged_at = :acknowledgedAt,
                     published_at = COALESCE(published_at, :acknowledgedAt), last_error = NULL
-                WHERE command_id = :commandId AND status <> 'ACKNOWLEDGED'
+                WHERE command_id = :commandId AND status IN ('PENDING', 'PUBLISHED')
+                  AND acknowledgement_deadline_at > :acknowledgedAt
                 """)
                 .param("commandId", commandId)
                 .param("acknowledgedAt", timestamp(acknowledgedAt))

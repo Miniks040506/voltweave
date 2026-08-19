@@ -50,8 +50,9 @@ public class CommandAcknowledgedConsumer {
                 return;
             }
             ParsedAcknowledgement parsed = parse(record, event);
+            var receivedAt = clock.instant();
             if (!repository.recordAcknowledgementIfNew(
-                    parsed.eventId(), EventTypes.COMMAND_ACKNOWLEDGED, clock.instant()
+                    parsed.eventId(), EventTypes.COMMAND_ACKNOWLEDGED, receivedAt
             )) {
                 return;
             }
@@ -62,10 +63,17 @@ public class CommandAcknowledgedConsumer {
             if (command.status() != CommandStatus.REQUESTED) {
                 return;
             }
+            if (!receivedAt.isBefore(command.acknowledgementDeadlineAt())) {
+                repository.timeOutUnacknowledged(command.id(), receivedAt);
+                repository.failPreparingDispatch(
+                        parsed.organizationId(), command.dispatchId()
+                );
+                return;
+            }
             CommandStatus status = CommandStatus.valueOf(parsed.payload().status());
             repository.acknowledge(
                     command.id(), status, parsed.payload().appliedPowerKw(),
-                    parsed.payload().reason(), clock.instant()
+                    parsed.payload().reason(), receivedAt
             );
             if (status == CommandStatus.ACCEPTED) {
                 repository.activateWhenAllCommandsAccepted(

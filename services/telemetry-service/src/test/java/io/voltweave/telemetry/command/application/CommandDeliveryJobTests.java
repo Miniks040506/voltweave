@@ -34,6 +34,7 @@ class CommandDeliveryJobTests {
 
         job.publishReady();
 
+        verify(repository).timeOutExpired(NOW, 50);
         verify(mqtt).publishCommand("device/command", "{}");
         verify(repository).markPublished(COMMAND_ID, NOW, NOW.plusSeconds(1));
     }

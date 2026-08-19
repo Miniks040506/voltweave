@@ -15,6 +15,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 
 import io.voltweave.contracts.events.EventTypes;
 import io.voltweave.telemetry.TimescaleTestConfiguration;
+import io.voltweave.telemetry.command.persistence.CommandGatewayRepository;
 
 @SpringBootTest(properties = {
         "voltweave.ingress.enabled=false",
@@ -33,6 +34,9 @@ class CommandAcknowledgementServiceIntegrationTests {
 
     @Autowired
     private CommandAcknowledgementService service;
+
+    @Autowired
+    private CommandGatewayRepository repository;
 
     @Autowired
     private JdbcClient jdbcClient;
@@ -89,6 +93,35 @@ class CommandAcknowledgementServiceIntegrationTests {
 
         assertThat(count("event_outbox")).isZero();
         assertThat(value("SELECT status FROM command_deliveries")).isEqualTo("PUBLISHED");
+    }
+
+    @Test
+    void persistsTimeoutAndDoesNotPublishALateAcknowledgement() {
+        expireDelivery();
+
+        service.receive(topic(DEVICE_ID), acceptedAck());
+
+        assertThat(value("SELECT status FROM command_deliveries")).isEqualTo("TIMED_OUT");
+        assertThat(value("SELECT last_error FROM command_deliveries"))
+                .isEqualTo("ACKNOWLEDGEMENT_TIMEOUT");
+        assertThat(count("event_outbox")).isZero();
+    }
+
+    @Test
+    void persistsTimeoutWithoutADeviceAcknowledgement() {
+        expireDelivery();
+
+        repository.timeOutExpired(Instant.now(), 50);
+
+        assertThat(value("SELECT status FROM command_deliveries")).isEqualTo("TIMED_OUT");
+        assertThat(count("event_outbox")).isZero();
+    }
+
+    private void expireDelivery() {
+        jdbcClient.sql("""
+                UPDATE command_deliveries
+                SET acknowledgement_deadline_at = now() - interval '1 second'
+                """).update();
     }
 
     private static byte[] acceptedAck() {

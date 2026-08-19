@@ -41,7 +41,9 @@ public class CommandDeliveryJob {
     @Scheduled(fixedDelayString = "${voltweave.command.poll-delay:1s}")
     @Transactional
     public void publishReady() {
-        for (var command : repository.lockReady(clock.instant(), BATCH_SIZE)) {
+        var now = clock.instant();
+        repository.timeOutExpired(now, BATCH_SIZE);
+        for (var command : repository.lockReady(now, BATCH_SIZE)) {
             try {
                 mqtt.publishCommand(command.mqttTopic(), command.mqttPayload());
                 repository.markPublished(
