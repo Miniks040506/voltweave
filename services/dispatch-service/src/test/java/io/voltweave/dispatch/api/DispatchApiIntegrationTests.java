@@ -295,6 +295,56 @@ class DispatchApiIntegrationTests {
                 .query(Integer.class).single()).isEqualTo(1);
     }
 
+    @Test
+    void rejectingCandidateReleasesItsDeviceReservation() throws Exception {
+        Instant startAt = nextQuarterHour();
+        allow("operator", ORGANIZATION_ID);
+        when(intelligenceClient.input(any(), any(), any(), any(), any()))
+                .thenReturn(dispatchInput(startAt));
+        var policy = new AutomationPolicy(
+                UUID.randomUUID(), ORGANIZATION_ID, VPP_ID, "PEAK_LIMIT",
+                "REQUIRE_OPERATOR", new BigDecimal("50"), null, 10,
+                new BigDecimal("10"), 30, 1
+        );
+        var cancelled = automationService.createCandidate(policy, new AutomationPlan(
+                startAt, Duration.ofMinutes(30), PREVIEW_ID, true
+        )).orElseThrow();
+        UUID deviceId = jdbcClient.sql("""
+                SELECT device_id FROM dispatch_allocations WHERE dispatch_id = :dispatchId
+                """).param("dispatchId", cancelled.id()).query(UUID.class).single();
+        insertReservation(cancelled.id(), deviceId, startAt);
+
+        assertThat(automationService.rejectCandidate(ORGANIZATION_ID, cancelled.id())).isTrue();
+
+        assertThat(jdbcClient.sql("SELECT count(*) FROM device_reservations")
+                .query(Integer.class).single()).isZero();
+        UUID replacementDispatchId = UUID.fromString(JsonPath.read(
+                create("operator", "after-cancellation", startAt, 30, 201), "$.id"
+        ));
+        insertReservation(replacementDispatchId, deviceId, startAt);
+        assertThat(jdbcClient.sql("SELECT count(*) FROM device_reservations")
+                .query(Integer.class).single()).isEqualTo(1);
+    }
+
+    private void insertReservation(UUID dispatchId, UUID deviceId, Instant startAt) {
+        jdbcClient.sql("""
+                INSERT INTO device_reservations (
+                    id, organization_id, dispatch_id, device_id,
+                    reserved_from, reserved_until, created_at
+                ) VALUES (
+                    :id, :organizationId, :dispatchId, :deviceId,
+                    :reservedFrom, :reservedUntil, CURRENT_TIMESTAMP
+                )
+                """)
+                .param("id", UUID.randomUUID())
+                .param("organizationId", ORGANIZATION_ID)
+                .param("dispatchId", dispatchId)
+                .param("deviceId", deviceId)
+                .param("reservedFrom", java.sql.Timestamp.from(startAt))
+                .param("reservedUntil", java.sql.Timestamp.from(startAt.plusSeconds(1800)))
+                .update();
+    }
+
     private String create(
             String subject, String key, Instant startAt, int durationMinutes, int statusCode
     ) throws Exception {

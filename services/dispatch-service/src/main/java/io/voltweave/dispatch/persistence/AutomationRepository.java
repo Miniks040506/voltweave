@@ -115,7 +115,7 @@ public class AutomationRepository {
     }
 
     public boolean cancelPendingCandidate(UUID organizationId, UUID dispatchId) {
-        return jdbcClient.sql("""
+        boolean cancelled = jdbcClient.sql("""
                 UPDATE dispatches dispatch
                 SET status = 'CANCELLED', version = version + 1
                 WHERE dispatch.organization_id = :organizationId
@@ -130,6 +130,10 @@ public class AutomationRepository {
                 .param("organizationId", organizationId)
                 .param("dispatchId", dispatchId)
                 .update() == 1;
+        if (cancelled) {
+            releaseReservations(organizationId, dispatchId);
+        }
+        return cancelled;
     }
 
     public void expirePendingCandidates(Instant now) {
@@ -146,6 +150,26 @@ public class AutomationRepository {
                   )
                 """)
                 .param("now", Timestamp.from(now)).update();
+        jdbcClient.sql("""
+                DELETE FROM device_reservations reservation
+                USING dispatches dispatch, automation_runs run
+                WHERE reservation.organization_id = dispatch.organization_id
+                  AND reservation.dispatch_id = dispatch.id
+                  AND run.organization_id = dispatch.organization_id
+                  AND run.dispatch_id = dispatch.id
+                  AND run.approval_mode = 'REQUIRE_OPERATOR'
+                  AND dispatch.status = 'CANCELLED'
+                """).update();
+    }
+
+    private void releaseReservations(UUID organizationId, UUID dispatchId) {
+        jdbcClient.sql("""
+                DELETE FROM device_reservations
+                WHERE organization_id = :organizationId AND dispatch_id = :dispatchId
+                """)
+                .param("organizationId", organizationId)
+                .param("dispatchId", dispatchId)
+                .update();
     }
 
     public record CandidateReference(
