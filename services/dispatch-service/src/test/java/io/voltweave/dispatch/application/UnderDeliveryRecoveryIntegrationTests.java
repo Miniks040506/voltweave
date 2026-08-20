@@ -56,6 +56,9 @@ class UnderDeliveryRecoveryIntegrationTests {
     private RebalanceApplicationService service;
 
     @Autowired
+    private PerformanceApplicationService performanceService;
+
+    @Autowired
     private CommandAcknowledgedConsumer acknowledgementConsumer;
 
     @Autowired
@@ -132,6 +135,17 @@ class UnderDeliveryRecoveryIntegrationTests {
         acknowledgementConsumer.consume(acknowledgement(commandId));
 
         assertThat(value("status")).isEqualTo("ACTIVE");
+        assertThat(jdbcClient.sql("SELECT status FROM dispatch_rebalances")
+                .query(String.class).single()).isEqualTo("COMPLETED");
+        assertThat(jdbcClient.sql("SELECT completed_at FROM dispatch_rebalances")
+                .query(Timestamp.class).single()).isNotNull();
+        insertReplacementPerformancePoint();
+        var performance = performanceService.find(
+                ORGANIZATION_ID, DISPATCH_ID
+        ).orElseThrow();
+        assertThat(performance.requestedPowerKw()).isEqualByComparingTo("10.000");
+        assertThat(performance.deliveredPowerKw()).isEqualByComparingTo("10.000");
+        assertThat(performance.achievementPercent()).isEqualByComparingTo("100.000");
         service.evaluate(DISPATCH_ID, NOW.plusSeconds(80));
         verify(intelligenceClient).replacementPlan(
                 any(), any(), any(), any(Integer.class), any(Duration.class), any()
@@ -211,6 +225,29 @@ class UnderDeliveryRecoveryIntegrationTests {
                 .param("eventId", UUID.randomUUID())
                 .param("observedAt", timestamp(NOW))
                 .param("recordedAt", timestamp(NOW))
+                .update();
+    }
+
+    private void insertReplacementPerformancePoint() {
+        jdbcClient.sql("""
+                INSERT INTO dispatch_performance_points (
+                    id, organization_id, dispatch_id, site_id, device_id,
+                    telemetry_event_id, observed_at, target_power_kw,
+                    requested_power_kw, actual_power_kw, delivered_power_kw,
+                    error_kw, error_percent, cumulative_delivered_energy_kwh,
+                    online, quality, recorded_at
+                ) VALUES (:id, :organizationId, :dispatchId, :siteId, :deviceId,
+                    :eventId, :observedAt, -6, 6, -6, 6, 0, 0, 0,
+                    true, 'VALID', :recordedAt)
+                """)
+                .param("id", UUID.randomUUID())
+                .param("organizationId", ORGANIZATION_ID)
+                .param("dispatchId", DISPATCH_ID)
+                .param("siteId", SITE_ID)
+                .param("deviceId", REPLACEMENT_DEVICE_ID)
+                .param("eventId", UUID.randomUUID())
+                .param("observedAt", timestamp(NOW.plusSeconds(32)))
+                .param("recordedAt", timestamp(NOW.plusSeconds(32)))
                 .update();
     }
 

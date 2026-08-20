@@ -77,7 +77,7 @@ public class CommandAcknowledgedConsumer {
             );
             if (status == CommandStatus.ACCEPTED) {
                 repository.activateWhenAllCommandsAccepted(
-                        parsed.organizationId(), command.dispatchId()
+                        parsed.organizationId(), command.dispatchId(), receivedAt
                 );
             }
         } catch (IllegalArgumentException exception) {

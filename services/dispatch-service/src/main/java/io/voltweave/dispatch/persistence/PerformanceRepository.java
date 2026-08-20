@@ -154,6 +154,18 @@ public class PerformanceRepository {
                 )).list();
     }
 
+    public BigDecimal originalRequestedPower(UUID organizationId, UUID dispatchId) {
+        return jdbcClient.sql("""
+                SELECT COALESCE(SUM(allocated_power_kw), 0)
+                FROM dispatch_allocations
+                WHERE organization_id = :organizationId AND dispatch_id = :dispatchId
+                """)
+                .param("organizationId", organizationId)
+                .param("dispatchId", dispatchId)
+                .query(BigDecimal.class)
+                .single();
+    }
+
     public record ActiveAllocation(
             UUID dispatchId,
             String deviceType,

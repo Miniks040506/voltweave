@@ -66,6 +66,18 @@ public class PerformanceApplicationService {
 
     @Transactional(readOnly = true)
     public Optional<DispatchPerformance> find(UUID organizationId, UUID dispatchId) {
+        return find(
+                organizationId,
+                dispatchId,
+                repository.originalRequestedPower(organizationId, dispatchId)
+        );
+    }
+
+    private Optional<DispatchPerformance> find(
+            UUID organizationId,
+            UUID dispatchId,
+            BigDecimal frozenRequestedPowerKw
+    ) {
         var points = repository.findPoints(organizationId, dispatchId);
         if (points.isEmpty()) {
             return Optional.empty();
@@ -76,7 +88,8 @@ public class PerformanceApplicationService {
                 (first, second) -> second
         )).values();
         BigDecimal requested = sum(latest.stream()
-                .map(DispatchPerformance.Point::requestedPowerKw).toList());
+                .map(DispatchPerformance.Point::requestedPowerKw).toList())
+                .min(frozenRequestedPowerKw);
         BigDecimal delivered = sum(latest.stream()
                 .map(DispatchPerformance.Point::deliveredPowerKw).toList());
         BigDecimal energy = sum(latest.stream()
@@ -90,9 +103,9 @@ public class PerformanceApplicationService {
     }
 
     public DispatchPerformance get(Dispatch dispatch) {
-        return find(dispatch.organizationId(), dispatch.id()).orElseGet(() -> {
-            BigDecimal requested = sum(dispatch.allocations().stream()
-                    .map(Dispatch.Allocation::allocatedPowerKw).toList());
+        BigDecimal requested = sum(dispatch.allocations().stream()
+                .map(Dispatch.Allocation::allocatedPowerKw).toList());
+        return find(dispatch.organizationId(), dispatch.id(), requested).orElseGet(() -> {
             return new DispatchPerformance(
                     dispatch.id(), requested, BigDecimal.ZERO.setScale(3), requested,
                     BigDecimal.ZERO.setScale(3), BigDecimal.ZERO.setScale(6), List.of()

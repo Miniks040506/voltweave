@@ -125,8 +125,12 @@ public class CommandRepository {
                 .update();
     }
 
-    public void activateWhenAllCommandsAccepted(UUID organizationId, UUID dispatchId) {
-        jdbcClient.sql("""
+    public void activateWhenAllCommandsAccepted(
+            UUID organizationId,
+            UUID dispatchId,
+            Instant completedAt
+    ) {
+        int activated = jdbcClient.sql("""
                 UPDATE dispatches SET status = 'ACTIVE', version = version + 1
                 WHERE organization_id = :organizationId AND id = :dispatchId
                   AND status IN ('PREPARING', 'REBALANCING')
@@ -141,6 +145,18 @@ public class CommandRepository {
                 .param("organizationId", organizationId)
                 .param("dispatchId", dispatchId)
                 .update();
+        if (activated == 1) {
+            jdbcClient.sql("""
+                    UPDATE dispatch_rebalances
+                    SET status = 'COMPLETED', completed_at = :completedAt
+                    WHERE organization_id = :organizationId
+                      AND dispatch_id = :dispatchId AND status = 'COMMANDING'
+                    """)
+                    .param("organizationId", organizationId)
+                    .param("dispatchId", dispatchId)
+                    .param("completedAt", timestamp(completedAt))
+                    .update();
+        }
     }
 
     public List<StalledCommand> lockStalledCommands(Instant now, int limit) {
