@@ -20,6 +20,7 @@ coverage/
 .env.*
 !.env.example
 scenario.local.json
+.simulator-state/
 
 # Test and tooling output
 playwright-report/

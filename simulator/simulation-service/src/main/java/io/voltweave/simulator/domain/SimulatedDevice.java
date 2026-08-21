@@ -3,9 +3,12 @@ package io.voltweave.simulator.domain;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
+import java.util.UUID;
 
 import io.voltweave.simulator.config.DeviceScenario;
 import io.voltweave.simulator.config.DeviceType;
+import io.voltweave.simulator.state.SimulatorState;
 
 public final class SimulatedDevice {
     private final DeviceScenario scenario;
@@ -14,10 +17,24 @@ public final class SimulatedDevice {
     private double socPercent;
 
     public SimulatedDevice(DeviceScenario scenario) {
+        this(scenario, null);
+    }
+
+    public SimulatedDevice(DeviceScenario scenario, SimulatorState restored) {
         this.scenario = scenario;
-        this.socPercent = scenario.initialSocPercent();
-        this.activePowerKw = scenario.type() == DeviceType.EV_CHARGER
-                ? scenario.ratedPowerKw() * 0.6 : 0;
+        if (restored == null) {
+            this.socPercent = scenario.initialSocPercent();
+            this.activePowerKw = scenario.type() == DeviceType.EV_CHARGER
+                    ? scenario.ratedPowerKw() * 0.6 : 0;
+            return;
+        }
+        if (!scenario.deviceId().equals(restored.deviceId())
+                || scenario.type() != restored.deviceType()) {
+            throw new IllegalArgumentException("saved state does not match device scenario");
+        }
+        this.sequenceNumber = restored.sequenceNumber();
+        this.activePowerKw = restored.activePowerKw();
+        this.socPercent = restored.socPercent();
     }
 
     public DeviceScenario scenario() {
@@ -52,6 +69,18 @@ public final class SimulatedDevice {
             case EV_CHARGER -> setEvPower(requestedPowerKw);
             case BATTERY -> setBatteryPower(requestedPowerKw);
         };
+    }
+
+    public synchronized SimulatorState snapshot(
+            UUID activeCommandId,
+            Instant activeCommandExpiresAt,
+            List<SimulatorState.AcknowledgementState> acknowledgements
+    ) {
+        return new SimulatorState(
+                scenario.deviceId(), scenario.type(), sequenceNumber,
+                activePowerKw, socPercent, activeCommandId,
+                activeCommandExpiresAt, acknowledgements
+        );
     }
 
     private DeviceActionResult setBatteryPower(double requestedPowerKw) {

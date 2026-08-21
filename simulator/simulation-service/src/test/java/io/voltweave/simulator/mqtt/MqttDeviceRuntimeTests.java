@@ -2,6 +2,7 @@ package io.voltweave.simulator.mqtt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
@@ -15,6 +16,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.MountableFile;
@@ -28,6 +30,9 @@ import io.voltweave.simulator.domain.DeviceTelemetry;
 import tools.jackson.databind.json.JsonMapper;
 
 class MqttDeviceRuntimeTests {
+    @TempDir
+    Path stateDirectory;
+
     private static final GenericContainer<?> MOSQUITTO =
             new GenericContainer<>("eclipse-mosquitto:2.0.22")
                     .withExposedPorts(1883)
@@ -69,7 +74,7 @@ class MqttDeviceRuntimeTests {
         ));
 
         var runtime = new MqttDeviceRuntime(
-                broker, scenario(), 1, mapper, Clock.systemUTC()
+                broker, scenario(), 1, mapper, Clock.systemUTC(), stateDirectory
         );
         try {
             runtime.start();

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.api.io.TempDir;
 
 import io.voltweave.simulator.config.DeviceScenario;
 import io.voltweave.simulator.config.DeviceType;
@@ -32,6 +34,9 @@ import tools.jackson.databind.json.JsonMapper;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
 class PlatformEndToEndIT {
+    @TempDir
+    Path simulatorStateDirectory;
+
     private final PlatformEnvironment environment = new PlatformEnvironment();
 
     private PlatformClient client;
@@ -391,7 +396,8 @@ class PlatformEndToEndIT {
                 scenario,
                 1,
                 JsonMapper.builder().build(),
-                Clock.systemUTC()
+                Clock.systemUTC(),
+                simulatorStateDirectory
         );
         simulator.start();
         simulators.add(simulator);

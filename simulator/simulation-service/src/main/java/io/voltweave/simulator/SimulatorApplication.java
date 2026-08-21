@@ -21,6 +21,8 @@ public final class SimulatorApplication {
         }
 
         var configuration = ScenarioLoader.load(Path.of(args[0]));
+        var stateDirectory = Path.of(args[0]).toAbsolutePath().getParent()
+                .resolve(".simulator-state");
         var objectMapper = JsonMapper.builder().build();
         List<MqttDeviceRuntime> runtimes = new ArrayList<>();
         try {
@@ -28,7 +30,7 @@ public final class SimulatorApplication {
                 var runtime = new MqttDeviceRuntime(
                         configuration.brokerUri(), scenario,
                         configuration.telemetryIntervalSeconds(), objectMapper,
-                        Clock.systemUTC()
+                        Clock.systemUTC(), stateDirectory
                 );
                 runtime.start();
                 runtimes.add(runtime);

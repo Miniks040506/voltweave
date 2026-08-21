@@ -1,5 +1,7 @@
 package io.voltweave.simulator.mqtt;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.concurrent.Executors;
@@ -16,6 +18,7 @@ import io.voltweave.simulator.command.DeviceCommand;
 import io.voltweave.simulator.command.DeviceCommandProcessor;
 import io.voltweave.simulator.config.DeviceScenario;
 import io.voltweave.simulator.domain.SimulatedDevice;
+import io.voltweave.simulator.state.SimulatorStateStore;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -30,6 +33,7 @@ public final class MqttDeviceRuntime implements AutoCloseable {
     private final Duration interval;
     private final MqttClient client;
     private final ScheduledExecutorService scheduler;
+    private final SimulatorStateStore stateStore;
     private boolean firstSample = true;
 
     public MqttDeviceRuntime(
@@ -37,11 +41,16 @@ public final class MqttDeviceRuntime implements AutoCloseable {
             DeviceScenario scenario,
             int intervalSeconds,
             ObjectMapper objectMapper,
-            Clock clock
-    ) throws MqttException {
+            Clock clock,
+            Path stateDirectory
+    ) throws MqttException, IOException {
         this.scenario = scenario;
-        this.device = new SimulatedDevice(scenario);
-        this.commandProcessor = new DeviceCommandProcessor(device, clock);
+        this.stateStore = new SimulatorStateStore(
+                stateDirectory.resolve(scenario.deviceId() + ".json"), objectMapper
+        );
+        var restored = stateStore.load().orElse(null);
+        this.device = new SimulatedDevice(scenario, restored);
+        this.commandProcessor = new DeviceCommandProcessor(device, clock, restored);
         this.objectMapper = objectMapper;
         this.clock = clock;
         this.interval = Duration.ofSeconds(intervalSeconds);
@@ -73,12 +82,16 @@ public final class MqttDeviceRuntime implements AutoCloseable {
         try {
             var command = objectMapper.readValue(message.getPayload(), DeviceCommand.class);
             var acknowledgement = commandProcessor.process(command);
+            stateStore.save(commandProcessor.snapshot());
             publish(scenario.mqtt().acknowledgementTopic(), acknowledgement, false);
         } catch (JacksonException exception) {
             System.err.printf("Invalid command for device %s: %s%n",
                     scenario.deviceId(), exception.getMessage());
         } catch (MqttException exception) {
             System.err.printf("Cannot acknowledge command for device %s: %s%n",
+                    scenario.deviceId(), exception.getMessage());
+        } catch (IOException exception) {
+            System.err.printf("Cannot persist command state for device %s: %s%n",
                     scenario.deviceId(), exception.getMessage());
         }
     }
@@ -88,13 +101,17 @@ public final class MqttDeviceRuntime implements AutoCloseable {
             return;
         }
         try {
+            commandProcessor.expireActiveCommand();
+            var telemetry = device.sample(
+                    clock.instant(), firstSample ? Duration.ZERO : interval
+            );
+            stateStore.save(commandProcessor.snapshot());
             publish(
                     scenario.mqtt().telemetryTopic(),
-                    device.sample(clock.instant(), firstSample ? Duration.ZERO : interval),
-                    false
+                    telemetry, false
             );
             firstSample = false;
-        } catch (MqttException | JacksonException exception) {
+        } catch (MqttException | JacksonException | IOException exception) {
             System.err.printf("Cannot publish telemetry for device %s: %s%n",
                     scenario.deviceId(), exception.getMessage());
         }

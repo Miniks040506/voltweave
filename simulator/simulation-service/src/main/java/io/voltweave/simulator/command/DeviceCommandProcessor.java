@@ -1,12 +1,14 @@
 package io.voltweave.simulator.command;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import io.voltweave.simulator.domain.DeviceActionResult;
 import io.voltweave.simulator.domain.SimulatedDevice;
+import io.voltweave.simulator.state.SimulatorState;
 
 public final class DeviceCommandProcessor {
     private static final int HISTORY_LIMIT = 1_000;
@@ -15,13 +17,33 @@ public final class DeviceCommandProcessor {
     private final Clock clock;
     private final Map<UUID, CommandAcknowledgement> history = new LinkedHashMap<>();
     private UUID activeCommandId;
+    private Instant activeCommandExpiresAt;
 
     public DeviceCommandProcessor(SimulatedDevice device, Clock clock) {
+        this(device, clock, null);
+    }
+
+    public DeviceCommandProcessor(
+            SimulatedDevice device,
+            Clock clock,
+            SimulatorState restored
+    ) {
         this.device = device;
         this.clock = clock;
+        if (restored != null) {
+            restored.recentAcknowledgements().forEach(saved -> history.put(
+                    saved.commandId(), new CommandAcknowledgement(
+                            saved.commandId(), saved.status(), saved.appliedPowerKw(),
+                            saved.reason(), saved.processedAt()
+                    )
+            ));
+            activeCommandId = restored.activeCommandId();
+            activeCommandExpiresAt = restored.activeCommandExpiresAt();
+        }
     }
 
     public synchronized CommandAcknowledgement process(DeviceCommand command) {
+        expireActiveCommand();
         var previous = history.get(command.commandId());
         if (previous != null) {
             return previous;
@@ -39,10 +61,34 @@ public final class DeviceCommandProcessor {
             acknowledgement = action(command, device.setPower(command.targetPowerKw()));
             if ("ACCEPTED".equals(acknowledgement.status())) {
                 activeCommandId = command.commandId();
+                activeCommandExpiresAt = command.expiresAt();
             }
         }
         remember(command.commandId(), acknowledgement);
         return acknowledgement;
+    }
+
+    public synchronized boolean expireActiveCommand() {
+        if (activeCommandExpiresAt == null
+                || clock.instant().isBefore(activeCommandExpiresAt)) {
+            return false;
+        }
+        device.setPower(0);
+        activeCommandId = null;
+        activeCommandExpiresAt = null;
+        return true;
+    }
+
+    public synchronized SimulatorState snapshot() {
+        var acknowledgements = history.values().stream()
+                .map(value -> new SimulatorState.AcknowledgementState(
+                        value.commandId(), value.status(), value.appliedPowerKw(),
+                        value.reason(), value.processedAt()
+                ))
+                .toList();
+        return device.snapshot(
+                activeCommandId, activeCommandExpiresAt, acknowledgements
+        );
     }
 
     private CommandAcknowledgement action(DeviceCommand command, DeviceActionResult result) {
